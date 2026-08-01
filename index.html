@@ -120,7 +120,7 @@ a{color:var(--pri);text-decoration:none}
   background:linear-gradient(150deg,var(--pri),color-mix(in srgb,var(--pri) 60%,var(--acc)));
   box-shadow:var(--sh-2);
 }
-.brand .mark svg{width:21px;height:21px}
+.brand .mark svg{width:22px;height:22px}
 .brand h1{margin:0;font-size:18px;font-family:"Zain";font-weight:900;line-height:1.1}
 .brand .sub{font-size:11px;color:var(--ink3);line-height:1.1;margin-top:1px}
 .icon-btn{
@@ -328,6 +328,8 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
 .att .meta span{font-size:11px;color:var(--ink3)}
 .att .rm{width:32px;height:32px;border-radius:11px;flex:none;display:grid;place-items:center;background:var(--bad-soft);color:var(--bad);transition:transform .3s var(--spring)}
 .att .rm:active{transform:scale(.85)}
+.rm-btn{width:32px;height:32px;border-radius:11px;flex:none;display:grid;place-items:center;background:var(--bad-soft);color:var(--bad);margin-inline-start:6px;transition:transform .3s var(--spring)}
+.rm-btn:active{transform:scale(.85)}
 .att-view{width:100%;border-radius:14px;display:block;margin-top:10px;border:1px solid var(--line)}
 .clip-i{display:inline-flex;vertical-align:-2px;margin-inline-start:4px;opacity:.75}
 .clip-i svg{width:12px;height:12px}
@@ -374,6 +376,14 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
 }
 
 /* ===================== TOAST ===================== */
+#netbar{position:fixed;top:0;inset-inline:0;z-index:70;max-width:520px;margin:0 auto;
+  padding:calc(var(--safe-t) + 7px) 16px 7px;text-align:center;font-size:12.5px;font-weight:600;
+  transform:translateY(-110%);transition:transform .4s var(--spring)}
+#netbar.on{transform:none}
+#netbar.off{background:var(--ink);color:var(--bg)}
+#netbar.wait{background:var(--warn);color:#241703}
+#netbar.up{background:var(--ok);color:#062615}
+#netbar.hide{display:none}
 #toast{position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 20px);inset-inline:0;z-index:80;display:flex;justify-content:center;pointer-events:none}
 #toast div{
   background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:var(--r-full);font-size:13.5px;font-weight:600;
@@ -477,8 +487,12 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
     <div class="topbar-row">
       <div class="brand">
         <div class="mark">
-          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 16.5 12 21l9-4.5"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2.6 9.6 12 4.2l9.4 5.4"/>
+            <path d="M4.4 10.7V20h15.2v-9.3"/>
+            <path d="M2.6 20h18.8"/>
+            <rect x="8.4" y="13.2" width="7.2" height="6.8" rx="1"/>
+            <path d="M8.4 16.6h7.2M12 13.2V20"/>
           </svg>
         </div>
         <div>
@@ -549,6 +563,7 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
   <div class="sheet-b" id="sheetBody"></div>
 </div>
 
+<div id="netbar" class="hide"><span id="netTxt"></span></div>
 <div id="toast"><div id="toastMsg"></div></div>
 
 <div id="auth"><div class="auth-box" id="authBox"></div></div>
@@ -1102,11 +1117,16 @@ function renderHome(){
   </div>` : "";
 
   /* أرصدة الأصناف — شرائط ملوّنة */
-  const bars = rows.filter(x => x.b > 0).sort((a,b) => b.b - a.b).slice(0,6);
+  const bars = rows.filter(x => x.b > 0).sort((a,b) => a.cv - b.cv || b.b - a.b).slice(0,6);
   const mxB = bars.length ? bars[0].b : 1;
   const barsCard = bars.length ? `<div class="card">
     <div class="card-h"><h3>أرصدة الأصناف</h3><span class="lnk" onclick="go('stock')">التفاصيل</span></div>
-    ${bars.map(x => hbar(esc(x.it.name), x.b, mxB, tintOf(x.it), `${n1(x.b)} <span class="mut2" style="font-size:10px;font-weight:400">${esc(x.it.unit)}</span>`)).join("")}
+    ${bars.map(x => {
+      const st = covState(x.cv);
+      const tail = x.cv === Infinity ? "" : ` <span class="mut2" style="font-size:10px;font-weight:400">· ${n0(x.cv)} يوم</span>`;
+      return `<div data-bitem="${x.it.id}">${hbar(esc(x.it.name), x.b, mxB, st==="bad"?"var(--bad)":st==="warn"?"var(--warn)":tintOf(x.it),
+        `${n1(x.b)} <span class="mut2" style="font-size:10px;font-weight:400">${esc(x.it.unit)}</span>${tail}`)}</div>`;
+    }).join("")}
   </div>` : "";
 
   const alertsCard = A.length ? `<div class="card">
@@ -1125,9 +1145,10 @@ function renderHome(){
     <div class="rows">${recent.map(m => moveRow(m)).join("")}</div>
   </div>` : "";
 
-  $("#s-home").innerHTML = hero + tiles + stats + donutCard + weekCard + centersCard + barsCard + alertsCard + recentCard;
+  $("#s-home").innerHTML = hero + tiles + barsCard + stats + alertsCard + centersCard + donutCard + weekCard + recentCard;
   $$("#s-home [data-alert]").forEach(el => el.onclick = () => { buzz(); A[+el.dataset.alert].go(); });
   $$("#s-home [data-center]").forEach(el => el.onclick = () => openCenter(el.dataset.center));
+  $$("#s-home [data-bitem]").forEach(el => el.onclick = () => openItem(el.dataset.bitem));
   $$("#s-home [data-move]").forEach(el => el.onclick = () => openMoveDetail(el.dataset.move));
   const big = $("#s-home .hero .big");
   if (big && risky) countUp(big, risky.cv, v => n0(v));
@@ -1288,7 +1309,11 @@ function openDealForm(pid, dealId){
   <div class="field"><label>الصنف</label><select id="dItem">${S.items.filter(i=>!i.archived).map(i => `<option value="${i.id}" ${i.id===selI?"selected":""}>${esc(i.name)}${i.size?" — "+esc(i.size):""}</option>`).join("")}</select></div>
   <div class="grid2">
     <div class="field"><label>الكمية المتعاقد عليها</label><input id="dQty" type="number" inputmode="decimal" value="${d?d.qty:""}" placeholder="١٠٠"></div>
-    <div class="field"><label>سعر الوحدة</label><input id="dPrice" type="number" inputmode="decimal" value="${d?d.price:""}" placeholder="٠"></div>
+    <div class="field"><label>سعر البيع للوحدة</label><input id="dPrice" type="number" inputmode="decimal" value="${d?d.price:(party(selP)?.sell||"")}" placeholder="٠"></div>
+  </div>
+  <div class="card tight" style="background:var(--surf2);display:flex;justify-content:space-between;align-items:center">
+    <span class="mut" style="font-size:12.5px">الربح المتوقّع</span>
+    <span class="num" id="dProfit" style="font-size:19px;color:var(--ok)">${money(0)}</span>
   </div>
   <div class="card tight" style="background:var(--surf2);display:flex;justify-content:space-between;align-items:center">
     <span class="mut" style="font-size:12.5px">إجمالي الطلبية</span>
@@ -1304,9 +1329,17 @@ function openDealForm(pid, dealId){
   <div style="height:10px"></div>`;
   sheet(d ? "تعديل طلبية" : "طلبية مدفوعة", h, () => {
     const upd = () => {
-      const tot = (+$("#dQty").value||0) * (+$("#dPrice").value||0);
-      $("#dTotal").textContent = money(tot);
+      const q = +$("#dQty").value || 0, pr = +$("#dPrice").value || 0;
+      $("#dTotal").textContent = money(q * pr);
+      const pp = party($("#dParty").value);
+      const c = (pp && pp.cost) || (item($("#dItem").value)?.cost) || 0;
+      const pf = (pr - c) * q;
+      const el = $("#dProfit");
+      el.textContent = c > 0 ? money(pf) : "—";
+      el.style.color = pf > 0 ? "var(--ok)" : pf < 0 ? "var(--bad)" : "var(--ink2)";
     };
+    $("#dParty").onchange = () => { const pp = party($("#dParty").value); if (pp && pp.sell) $("#dPrice").value = pp.sell; upd(); };
+    $("#dItem").onchange = upd;
     $("#dQty").oninput = upd; $("#dPrice").oninput = upd;
     $("#dFill").onclick = () => { $("#dPaid").value = (+$("#dQty").value||0) * (+$("#dPrice").value||0); buzz(6); };
     $("#dSave").onclick = () => {
@@ -1911,7 +1944,10 @@ function openItemForm(id){
   <div class="field"><label>ملاحظات</label><textarea id="fNote" placeholder="اسم المورد، رقم الموديل، أي حاجة">${esc(it?it.note:"")}</textarea></div>
   ${!it ? `<div class="field"><label>رصيد افتتاحي</label><input id="fOpen" type="number" inputmode="decimal" placeholder="٠"><div class="hint">بالوحدة اللي اخترتها — هيتسجّل كحركة وارد بتاريخ النهاردة</div></div>` : ""}
   <button class="btn wide" id="fSave">${svg("check",16)} ${it?"احفظ التعديل":"ضيف الصنف"}</button>
-  ${it ? `<button class="btn danger wide sm" style="margin-top:9px" onclick="archiveItem('${it.id}')">${svg("trash",14)} ${it.archived?"رجّع الصنف":"أرشف الصنف"}</button>` : ""}
+  ${it ? `<div class="btn-row" style="margin-top:9px">
+    <button class="btn ghost sm" onclick="archiveItem('${it.id}')">${svg("box",14)} ${it.archived?"رجّع الصنف":"أرشفة"}</button>
+    <button class="btn danger sm" onclick="delItem('${it.id}')">${svg("trash",14)} حذف نهائي</button>
+  </div>` : ""}
   <div style="height:10px"></div>`;
 
   sheet(it ? "تعديل صنف" : "صنف جديد", h, () => {
@@ -1938,7 +1974,28 @@ function openItemForm(id){
     };
   });
 }
+function delItem(id){
+  if (!need("edit")) return;
+  const it = item(id); if (!it) return;
+  const ms = S.moves.filter(m => m.itemId === id);
+  const ds = S.deals.filter(d => d.itemId === id);
+  const h = `<div class="card" style="background:var(--bad-soft);border-color:transparent">
+      <div style="display:flex;gap:10px"><div style="color:var(--bad)">${svg("warn",20)}</div>
+      <div style="font-size:13.5px;line-height:1.6">هتحذف <b>${esc(it.name)}</b> نهائياً${ms.length?` ومعاه <b>${n0(ms.length)}</b> حركة`:""}${ds.length?` و<b>${n0(ds.length)}</b> طلبية`:""}.
+      ${ms.length?"الأرصدة والتقارير هتتغيّر. لو عايز تحتفظ بالتاريخ استخدم «أرشفة» بدل الحذف.":"الصنف ده مفيش عليه أي حركات."}</div></div>
+    <button class="btn danger wide" id="diGo">${svg("trash",15)} أيوة احذفه نهائي</button>
+    <div style="height:10px"></div>`;
+  sheet("حذف صنف", h, () => {
+    $("#diGo").onclick = () => {
+      S.moves = S.moves.filter(m => m.itemId !== id);
+      S.deals = S.deals.filter(d => d.itemId !== id);
+      S.items = S.items.filter(x => x.id !== id);
+      persist(); buzz(20); closeSheet(); render(); toast("الصنف اتحذف نهائي");
+    };
+  });
+}
 function archiveItem(id){
+  if (!need("edit")) return;
   const it = item(id); if (!it) return;
   it.archived = !it.archived; persist(); closeSheet(); render();
   toast(it.archived ? "اتأرشف" : "رجع تاني");
@@ -2035,7 +2092,10 @@ function drawMoveForm(){
   const takes = MOVES[mfType].sign < 0 || isMove;      /* الحركات اللي بتخصم من المخزن */
   const needParty = mfType === "in" || mfType === "out" || mfType === "ret_in" || mfType === "ret_out";
   const ds = mfType === "out" && mfParty ? openDeals() : [];
+  if (mfType === "out" && mfParty && !mfDeal && ds.length === 1) mfDeal = ds[0].id;   /* ربط تلقائي */
   const deal = ds.find(d => d.id === mfDeal) || null;
+  const otherDeals = mfType === "out" && !mfParty
+    ? S.deals.filter(d => d.itemId === mfItem && dealRemaining(d) > 0) : [];
   const sheety = isSheet(it);
   const P = sheety ? it.pack : 0;
   const paper = !!(it && SHEETY.includes(it.unit));      /* الصنف بيتحسب بالورقة */
@@ -2093,6 +2153,15 @@ function drawMoveForm(){
     <select id="mvParty"><option value="">— بدون —</option>${S.parties.map(p => `<option value="${p.id}" ${p.id===mfParty?"selected":""}>${esc(p.name)}</option>`).join("")}</select>
     <div class="hint"><span style="color:var(--pri);font-weight:600;cursor:pointer" id="addParty">+ ضيف جهة جديدة</span></div></div>` : ""}
 
+  ${otherDeals.length ? `<div class="card tight" style="background:var(--info-soft);border-color:transparent">
+    <div style="font-size:12.5px;line-height:1.6;margin-bottom:9px">فيه ${n0(otherDeals.length)} طلبية مفتوحة على الصنف ده — اختار المركز عشان التسليم يتخصم منها:</div>
+    <div class="picks">${otherDeals.map(d => `<button class="pick" data-pick-deal="${d.id}">${esc(party(d.partyId)?.name||"")} <span style="opacity:.65;font-size:10.5px">(${n1(dealRemaining(d))})</span></button>`).join("")}</div>
+  </div>` : ""}
+
+  ${mfType === "out" && mfParty && !ds.length ? `<div class="card tight" style="background:var(--warn-soft);border-color:transparent">
+    <div style="font-size:12.5px;line-height:1.6">مفيش طلبية مفتوحة للمركز ده على الصنف ده — التسليم هيتسجّل كصرف عادي.
+      <span style="color:var(--pri);font-weight:700" id="mkDeal">اعمل طلبية</span></div></div>` : ""}
+
   ${ds.length ? `<div class="field"><label>خصم من طلبية مدفوعة</label>
     <select id="mvDeal"><option value="">— بدون —</option>${ds.map(d => `<option value="${d.id}" ${d.id===mfDeal?"selected":""}>${fDate(d.date)} — باقي ${n1(dealRemaining(d))} من ${n1(d.qty)}</option>`).join("")}</select>
     ${deal ? `<div style="margin-top:9px">${depBar(dealRemaining(deal), deal.qty, tintOf(it))}
@@ -2130,6 +2199,11 @@ function drawMoveForm(){
     if ($("#mvTo")) $("#mvTo").onchange = e => { mfTo = e.target.value; };
     if ($("#mvParty")) $("#mvParty").onchange = e => { mfParty = e.target.value; mfDeal = ""; drawMoveForm(); };
     if ($("#mvDeal")) $("#mvDeal").onchange = e => { mfDeal = e.target.value; drawMoveForm(); };
+    $$("#sheetBody [data-pick-deal]").forEach(b => b.onclick = () => {
+      const d = S.deals.find(x => x.id === b.dataset.pickDeal);
+      if (d){ mfParty = d.partyId; mfDeal = d.id; buzz(8); drawMoveForm(); }
+    });
+    if ($("#mkDeal")) $("#mkDeal").onclick = () => { const pp = mfParty; closeSheet(); setTimeout(() => openDealForm(pp), 240); };
     if ($("#addParty")) $("#addParty").onclick = () => openPartyForm(null, () => drawMoveForm());
     $$("#sheetBody [data-step]").forEach(b => {
       const bump = () => { const inp = $("#mvQty"); inp.value = Math.max(0, Math.round(((+inp.value || 0) + (+b.dataset.step))*100)/100); buzz(6); hint(); };
@@ -2334,10 +2408,14 @@ function openItemsList(){
       <div class="ic" style="--tint:${tintOf(i)}">${svg(icOf(i))}</div>
       <div class="mid"><div class="t">${esc(i.name)}</div><div class="d">${[i.code,i.size,CATS[i.cat]?.ar,i.archived?"مؤرشف":""].filter(Boolean).map(esc).join(" · ")}</div></div>
       <div class="end"><div class="v num">${n1(balance(i.id))}</div><div class="u">${esc(i.unit)}</div></div>
+      <button class="rm-btn" data-del="${i.id}">${svg("trash",15)}</button>
     </div>`).join("")}</div></div>` : `<div class="empty"><div class="ic">${svg("box",28)}</div><h4>مفيش أصناف</h4><p>ابدأ بإضافة أول صنف.</p></div>`}
   <div style="height:10px"></div>`;
   sheet("الأصناف", h, () => {
-    $$("#sheetBody [data-it]").forEach(el => el.onclick = () => openItemForm(el.dataset.it));
+    $$("#sheetBody [data-it]").forEach(el => el.onclick = e => {
+      if (e.target.closest("[data-del]")) return; openItemForm(el.dataset.it);
+    });
+    $$("#sheetBody [data-del]").forEach(b => b.onclick = e => { e.stopPropagation(); delItem(b.dataset.del); });
   });
 }
 
@@ -2436,14 +2514,38 @@ function openPartyForm(id, after){
     <button class="pick ${kind==="sup"?"on":""}" data-k="sup">مورد</button></div></div>
   <div class="field"><label>التليفون</label><input id="pPhone" type="tel" value="${esc(p?p.phone:"")}" placeholder="01xxxxxxxxx"></div>
   <div class="field"><label>ملاحظة</label><input id="pNote" value="${esc(p?p.note:"")}" placeholder="العنوان أو اسم المسؤول"></div>
+  <div id="pPrices" class="${kind==="sup"?"hide":""}">
+    <div class="grid2">
+      <div class="field"><label>سعر الوحدة (التكلفة)</label><input id="pCost" type="number" inputmode="decimal" value="${p&&p.cost?p.cost:""}" placeholder="٠"></div>
+      <div class="field"><label>سعر البيع للعميل</label><input id="pSell" type="number" inputmode="decimal" value="${p&&p.sell?p.sell:""}" placeholder="٠"></div>
+    </div>
+    <div class="card tight" style="background:var(--surf2);display:flex;justify-content:space-between;align-items:center;margin-bottom:13px">
+      <span class="mut" style="font-size:12.5px">الربح في الوحدة</span>
+      <span class="num" id="pProfit" style="font-size:19px">${money(0)}</span>
+    </div>
+    <div class="hint" style="margin:-6px 0 13px">الأسعار دي بتتحط لوحدها في أي طلبية جديدة للعميل ده.</div>
+  </div>
   <button class="btn wide" id="pSave">${svg("check",16)} احفظ</button>
   ${p ? `<button class="btn danger wide sm" style="margin-top:9px" id="pDel">${svg("trash",14)} احذف</button>` : ""}
   <div style="height:10px"></div>`;
   sheet(p ? "تعديل جهة" : "جهة جديدة", h, () => {
-    $$("#pKind .pick").forEach(b => b.onclick = () => { kind = b.dataset.k; $$("#pKind .pick").forEach(x => x.classList.toggle("on", x===b)); buzz(6); });
+    const prof = () => {
+      const c = +$("#pCost").value || 0, se = +$("#pSell").value || 0, d = se - c;
+      const el = $("#pProfit");
+      el.textContent = money(d);
+      el.style.color = d > 0 ? "var(--ok)" : d < 0 ? "var(--bad)" : "var(--ink)";
+      const pct = c > 0 ? (d/c)*100 : 0;
+      if (c > 0 && se > 0) el.textContent = `${money(d)} · ${n0(pct)}٪`;
+    };
+    $("#pCost").oninput = prof; $("#pSell").oninput = prof; prof();
+    $$("#pKind .pick").forEach(b => b.onclick = () => {
+      kind = b.dataset.k; $$("#pKind .pick").forEach(x => x.classList.toggle("on", x===b));
+      $("#pPrices").classList.toggle("hide", kind === "sup"); buzz(6);
+    });
     $("#pSave").onclick = () => {
       const name = $("#pName").value.trim(); if (!name) return toast("اكتب الاسم");
-      const o = { name, kind, phone:$("#pPhone").value.trim(), note:$("#pNote").value.trim() };
+      const o = { name, kind, phone:$("#pPhone").value.trim(), note:$("#pNote").value.trim(),
+                  cost:+$("#pCost").value || 0, sell:+$("#pSell").value || 0 };
       if (p) Object.assign(p, o); else { o.id = uid(); S.parties.push(o); }
       persist(); closeSheet(); render(); toast("اتحفظ");
       if (after) setTimeout(after, 260);
@@ -2698,8 +2800,9 @@ const byName  = (id) => { const u = (S.users||[]).find(x => x.id === id); return
 function authView(mode){
   const box = $("#authBox");
   const brand = `<div class="auth-crest">
-      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:34px;height:34px">
-        <path d="M3 8.5 12 4l9 4.5-9 4.5-9-4.5Z"/><path d="M3 12.5 12 17l9-4.5"/><path d="M3 16.5 12 21l9-4.5"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:38px;height:38px">
+        <path d="M2.6 9.6 12 4.2l9.4 5.4"/><path d="M4.4 10.7V20h15.2v-9.3"/><path d="M2.6 20h18.8"/>
+        <rect x="8.4" y="13.2" width="7.2" height="6.8" rx="1"/><path d="M8.4 16.6h7.2M12 13.2V20"/></svg>
     </div>`;
 
   if (mode === "setup"){
@@ -3211,8 +3314,10 @@ async function syncNow(loud){
   if (!TOKEN || SYNCING) return false;
   if (typeof navigator !== "undefined" && navigator.onLine === false){ if (loud) toast("مفيش نت دلوقتي"); return false; }
   SYNCING = true; SYNC_ERR = ""; paintSync();
+  let wasPending = 0;
   try{
     stampChanges();
+    wasPending = pendingCount();
     const recs = [];
     for (const k of SYNC_KINDS){
       for (const r of (S[k] || [])) if ((r.u || 0) > PUSHED) recs.push({ kind:k, id:r.id, u:r.u, data:JSON.stringify(r) });
@@ -3249,6 +3354,7 @@ async function syncNow(loud){
       if (!busy) render();
     } else persist();
     SYNCING = false; paintSync();
+    if (wasPending) netBar("up", `اترفع ${n0(wasPending)} تغيير ✅`);
     if (loud) toast(changed ? "اتزامن — فيه بيانات جديدة" : "كله متزامن ✅");
     return true;
   }catch(e){
@@ -3263,11 +3369,39 @@ async function syncNow(loud){
 let syncDebounce = null;
 function syncSoon(){ if (!TOKEN) return; clearTimeout(syncDebounce); syncDebounce = setTimeout(() => syncNow(false), 900); }
 
+let netTimer = null;
+function netBar(kind, txt){
+  const b = $("#netbar"); if (!b) return;
+  clearTimeout(netTimer);
+  if (!kind){ b.classList.remove("on"); netTimer = setTimeout(() => b.classList.add("hide"), 420); return; }
+  b.classList.remove("hide","off","wait","up");
+  b.classList.add(kind);
+  $("#netTxt").textContent = txt;
+  requestAnimationFrame(() => b.classList.add("on"));
+  if (kind === "up") netTimer = setTimeout(() => netBar(null), 2600);
+}
+function pendingCount(){
+  let n = 0;
+  for (const k of SYNC_KINDS) for (const r of (S[k] || [])) if ((r.u || 0) > PUSHED) n++;
+  for (const k of Object.keys(S.tombs || {})) for (const id of Object.keys(S.tombs[k])) if (S.tombs[k][id] > PUSHED) n++;
+  return n;
+}
+function paintNet(){
+  const off = typeof navigator !== "undefined" && navigator.onLine === false;
+  if (off){
+    stampChanges();
+    const n = pendingCount();
+    return netBar("off", n ? `مفيش نت — ${n0(n)} تغيير محفوظ وهيترفع لوحده` : "مفيش نت — الشغل محفوظ على الجهاز");
+  }
+  if (TOKEN && SYNCING) return netBar("wait", "بيرفع البيانات…");
+  netBar(null);
+}
 function paintSync(){
   const b = $("#btnSync"); if (!b) return;
   b.classList.toggle("hide", !TOKEN);
   const w = $("#whoBox"); if (w && !ME) w.classList.add("hide");
   b.classList.toggle("spin", SYNCING);
+  paintNet();
   b.style.color = SYNC_ERR ? "var(--bad)" : (SYNCING ? "var(--pri)" : "var(--ink2)");
 }
 
@@ -3377,10 +3511,13 @@ addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
   loadSess();
   rebuildShadow();
   paintSync();
+  addEventListener("offline", paintNet);
+  addEventListener("online", () => { paintNet(); if (TOKEN) syncNow(false); });
+  paintNet();
   if (location.protocol !== "file:"){
     serverAlive().then(ok => { if (ok && TOKEN) syncNow(false); });
     setInterval(() => { if (TOKEN) syncNow(false); }, 15000);
-    addEventListener("online", () => { if (TOKEN) syncNow(false); });
+
     addEventListener("visibilitychange", () => { if (!document.hidden && TOKEN) syncNow(false); });
   }
   /* PWA */
