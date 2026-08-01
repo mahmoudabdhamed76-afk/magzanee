@@ -1,0 +1,14 @@
+{
+  "name": "makhzoni",
+  "version": "1.1.0",
+  "private": true,
+  "description": "مخزوني — إدارة المخازن واستهلاك الورق والفيلم، عربي RTL، بدون أي مكتبات خارجية",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": { "node": ">=22" },
+  "license": "MIT"
+}

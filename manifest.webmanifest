@@ -1,0 +1,17 @@
+{
+  "name": "مخزوني — إدارة المخازن والاستهلاك",
+  "short_name": "مخزوني",
+  "description": "إدارة مخزن الورق والفيلم والاستهلاك وطلبيات المراكز",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EDF0F5",
+  "theme_color": "#243B63",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
