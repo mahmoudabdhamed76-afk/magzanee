@@ -41,7 +41,7 @@ db.exec(`
   );
 `);
 
-const KINDS = new Set(["items", "stores", "parties", "moves", "deals", "pays", "users"]);
+const KINDS = new Set(["items", "stores", "parties", "moves", "deals", "pays", "cols", "users"]);
 const MAX_BODY = 12 * 1024 * 1024;         /* المرفقات بتكبّر الطلب */
 const TOKEN_DAYS = 90;
 
