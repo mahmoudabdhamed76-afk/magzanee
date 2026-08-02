@@ -190,6 +190,19 @@ main{padding:14px 16px calc(var(--nav-h) + var(--safe-b) + 26px)}
 .hero .unit{font-size:15px;opacity:.8;font-weight:400;margin-inline-start:6px}
 .hero .note{font-size:12.5px;opacity:.82}
 .hero-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:16px;position:relative}
+.hero{position:relative}
+.hero-ring{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.hero-ring .trk{fill:none;stroke:rgba(255,255,255,.14);stroke-width:3}
+.hero-ring .bar{fill:none;stroke-width:3.5;stroke-linecap:round;
+  stroke-dasharray:var(--len);stroke-dashoffset:var(--len);
+  animation:ringfill 1.25s var(--out) .15s forwards;
+  filter:drop-shadow(0 0 5px currentColor)}
+@keyframes ringfill{to{stroke-dashoffset:var(--off)}}
+.hero-cap{display:flex;align-items:center;gap:7px;margin-top:13px;position:relative;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.14);
+  border-radius:14px;padding:9px 12px;font-size:12.5px;line-height:1.5}
+.hero-cap .dot{width:8px;height:8px;border-radius:50%;flex:none;box-shadow:0 0 0 3px rgba(255,255,255,.12)}
+.hero-cap b{font-weight:700}
 .hero-grid > div{background:rgba(255,255,255,.11);border:1px solid rgba(255,255,255,.13);border-radius:14px;padding:9px 10px}
 .hero-grid .k{font-size:10.5px;opacity:.75;line-height:1.3}
 .hero-grid .v{font-size:19px;line-height:1.2;margin-top:2px}
@@ -376,14 +389,18 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
 }
 
 /* ===================== TOAST ===================== */
-#netbar{position:fixed;top:0;inset-inline:0;z-index:70;max-width:520px;margin:0 auto;
-  padding:calc(var(--safe-t) + 7px) 16px 7px;text-align:center;font-size:12.5px;font-weight:600;
-  transform:translateY(-110%);transition:transform .4s var(--spring)}
-#netbar.on{transform:none}
-#netbar.off{background:var(--ink);color:var(--bg)}
-#netbar.wait{background:var(--warn);color:#241703}
-#netbar.up{background:var(--ok);color:#062615}
-#netbar.hide{display:none}
+/* مؤشّر الاتصال — أيقونة صغيرة جنب الإشعارات */
+.icon-btn.net{position:relative}
+.icon-btn.net .st{
+  position:absolute;bottom:5px;inset-inline-end:5px;width:9px;height:9px;border-radius:50%;
+  border:2px solid var(--surf);background:var(--ink3);transition:background .3s;
+}
+.icon-btn.net.on-line .st{background:var(--ok)}
+.icon-btn.net.off-line .st{background:var(--ink3)}
+.icon-btn.net.pending .st{background:var(--warn)}
+.icon-btn.net.busy .st{background:var(--pri)}
+@keyframes pulse-dot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.6);opacity:.55}}
+.icon-btn.net.busy .st{animation:pulse-dot 1s ease-in-out infinite}
 #toast{position:fixed;bottom:calc(var(--nav-h) + var(--safe-b) + 20px);inset-inline:0;z-index:80;display:flex;justify-content:center;pointer-events:none}
 #toast div{
   background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:var(--r-full);font-size:13.5px;font-weight:600;
@@ -502,8 +519,8 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
       </div>
       <div style="flex:1"></div>
       <button class="who hide" id="whoBox" aria-label="المستخدم"></button>
-      <button class="icon-btn hide" id="btnSync" aria-label="المزامنة">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-.6 4"/><path d="M20 5v6h-6"/></svg>
+      <button class="icon-btn net" id="btnNet" aria-label="حالة الاتصال">
+        <span id="netIc"></span><i class="st"></i>
       </button>
       <button class="icon-btn" id="btnAlerts" aria-label="التنبيهات">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 1 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
@@ -563,7 +580,6 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
   <div class="sheet-b" id="sheetBody"></div>
 </div>
 
-<div id="netbar" class="hide"><span id="netTxt"></span></div>
 <div id="toast"><div id="toastMsg"></div></div>
 
 <div id="auth"><div class="auth-box" id="authBox"></div></div>
@@ -688,6 +704,9 @@ const I = {
   moon:'<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/>',
   file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/>',
   cloud:'<path d="M17.5 19H7a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.7 9.2 4.9 4.9 0 0 1 17.5 19Z"/>',
+  cloudok:'<path d="M17.5 18H7a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 17.7 8.2 4.9 4.9 0 0 1 17.5 18Z"/><path d="m9.6 13.4 1.9 1.9 3.4-3.6"/>',
+  cloudoff:'<path d="M6.6 9.1A4.5 4.5 0 0 0 7 18h9.2"/><path d="M9.2 6.5a6 6 0 0 1 8.5 2.7 4.9 4.9 0 0 1 2.1 8"/><path d="M3 3l18 18"/>',
+  wifi:'<path d="M2.5 8.5a15 15 0 0 1 19 0"/><path d="M5.5 12a10.5 10.5 0 0 1 13 0"/><path d="M8.5 15.4a6 6 0 0 1 7 0"/><path d="M12 19v.01"/>',
   user:'<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
   users:'<circle cx="9" cy="8" r="3.2"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3 3 0 0 1 0 5.6M17.5 20a6.4 6.4 0 0 0-2-4.6"/>',
   shield:'<path d="M12 3 5 6v6c0 4.4 3 7.6 7 9 4-1.4 7-4.6 7-9V6l-7-3Z"/><path d="m9 12 2 2 4-4"/>',
@@ -1044,6 +1063,7 @@ function renderHome(){
     </div>`;
   } else if (!risky){
     hero = `<div class="hero">
+      ${heroRing(fillPct(), "#8FD3FF")}
       <div class="lbl">${svg("info",14)} <span>لسه مفيش استهلاك</span></div>
       <div class="big dsp">${n0(live.length)}<span class="unit">صنف</span></div>
       <div class="note">سجّل أول عملية صرف عشان نحسب معدل الاستهلاك وأيام التغطية.</div>
@@ -1051,7 +1071,9 @@ function renderHome(){
     </div>`;
   } else {
     const st = covState(risky.cv);
+    const ringTint = st === "bad" ? "#FF8A80" : st === "warn" ? "#FFD16B" : "#5BE3A7";
     hero = `<div class="hero">
+      ${heroRing(fillPct(), ringTint)}
       <div class="lbl">${svg("clock",14)} <span>أقرب صنف يخلص</span></div>
       <div class="big dsp">${n0(risky.cv)}<span class="unit">يوم تغطية</span></div>
       <div class="note">${esc(risky.it.name)} — رصيد ${n1(risky.b)} ${esc(risky.it.unit)} · ${COV_LBL[st]}</div>
@@ -1158,12 +1180,61 @@ function stat(ic, k, v, sub, tint, act){
     <div class="k">${svg(ic)} <span>${k}</span></div>
     <div class="v dsp">${v}</div><div class="s">${sub}</div></div>`;
 }
+/* إجمالي الورق الموجود دلوقتي في كل الأصناف اللي بتتحسب بالورقة */
+function paperOnHand(){
+  return S.items.filter(i => !i.archived && SHEETY.includes(i.unit))
+    .reduce((a,i) => a + Math.max(0, balance(i.id)), 0);
+}
+function paperPulled(from, to){
+  let q = 0;
+  for (const m of S.moves){
+    if (m.type !== "out" && m.type !== "damage") continue;
+    if (from && m.date < from) continue;
+    if (to && m.date > to) continue;
+    const it = item(m.itemId);
+    if (it && SHEETY.includes(it.unit)) q += m.qty;
+  }
+  return q;
+}
+/* نسبة امتلاء المخزن — الموجود مقابل أعلى رصيد وصله */
+function fillPct(){
+  const live = S.items.filter(i => !i.archived);
+  if (!live.length) return 0;
+  let now = 0, ref = 0;
+  for (const i of live){ now += Math.max(0, balance(i.id)); ref += refLevel(i); }
+  return ref > 0 ? Math.max(0, Math.min(1, now / ref)) : 0;
+}
+/* إطار بيلف حوالين الكارت وبيزيد ويقل مع الرصيد */
+function heroRing(pct, tint){
+  const W = 340, H = 190, R = 26, sw = 3.5, pad = sw/2;
+  const w = W - sw, h = H - sw;
+  const d = `M ${pad+R} ${pad} H ${pad+w-R} A ${R} ${R} 0 0 1 ${pad+w} ${pad+R}`
+          + ` V ${pad+h-R} A ${R} ${R} 0 0 1 ${pad+w-R} ${pad+h}`
+          + ` H ${pad+R} A ${R} ${R} 0 0 1 ${pad} ${pad+h-R}`
+          + ` V ${pad+R} A ${R} ${R} 0 0 1 ${pad+R} ${pad} Z`;
+  const len = 2*(w-2*R) + 2*(h-2*R) + 2*Math.PI*R;
+  return `<svg class="hero-ring" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <path class="trk" d="${d}"/>
+    <path class="bar" d="${d}" style="stroke:${tint};color:${tint};--len:${len.toFixed(0)};--off:${(len*(1-pct)).toFixed(0)}"/>
+  </svg>`;
+}
 function heroGrid(val, belowMin, monthOut){
+  const t = todayISO();
+  const onHand = paperOnHand();
+  const pulled = paperPulled(addDays(t,-29), t);
+  const pulledToday = paperPulled(t, t);
+  const A = alerts();
+  const top = A[0];
+  const capTint = !A.length ? "#5BE3A7" : top.sev >= 3 ? "#FF8A80" : top.sev >= 2 ? "#FFD16B" : "#8FD3FF";
+  const capTxt = !A.length
+    ? "المخزن في حالة كويسة — مفيش تنبيهات"
+    : `<b>${esc(top.t)}</b>${A.length>1?` · و${n0(A.length-1)} تنبيه تاني`:""}`;
   return `<div class="hero-grid">
-    <div><div class="k">قيمة المخزون</div><div class="v dsp">${money(val)}</div></div>
-    <div><div class="k">تحت حد الطلب</div><div class="v dsp">${n0(belowMin)}</div></div>
-    <div><div class="k">استهلاك ${n0(30)} يوم</div><div class="v dsp">${n1(monthOut)}</div></div>
-  </div>`;
+    <div><div class="k">إجمالي الورق</div><div class="v dsp">${n0(onHand)}</div><div class="k" style="margin-top:1px">ورقة في المخزن</div></div>
+    <div><div class="k">الورق المسحوب</div><div class="v dsp">${n0(pulled)}</div><div class="k" style="margin-top:1px">${pulledToday?`النهاردة ${n0(pulledToday)}`:`آخر ${n0(30)} يوم`}</div></div>
+    <div><div class="k">قيمة المخزون</div><div class="v dsp" style="font-size:17px">${money(val)}</div><div class="k" style="margin-top:1px">${belowMin?`${n0(belowMin)} تحت حد الطلب`:"كله فوق الحد"}</div></div>
+  </div>
+  <div class="hero-cap"><span class="dot" style="background:${capTint}"></span><span>${capTxt}</span></div>`;
 }
 function tile(type, label, tint){
   return `<button class="tile" style="--tint:${tint}" onclick="openMoveForm('${type}')">
@@ -3354,7 +3425,6 @@ async function syncNow(loud){
       if (!busy) render();
     } else persist();
     SYNCING = false; paintSync();
-    if (wasPending) netBar("up", `اترفع ${n0(wasPending)} تغيير ✅`);
     if (loud) toast(changed ? "اتزامن — فيه بيانات جديدة" : "كله متزامن ✅");
     return true;
   }catch(e){
@@ -3369,40 +3439,66 @@ async function syncNow(loud){
 let syncDebounce = null;
 function syncSoon(){ if (!TOKEN) return; clearTimeout(syncDebounce); syncDebounce = setTimeout(() => syncNow(false), 900); }
 
-let netTimer = null;
-function netBar(kind, txt){
-  const b = $("#netbar"); if (!b) return;
-  clearTimeout(netTimer);
-  if (!kind){ b.classList.remove("on"); netTimer = setTimeout(() => b.classList.add("hide"), 420); return; }
-  b.classList.remove("hide","off","wait","up");
-  b.classList.add(kind);
-  $("#netTxt").textContent = txt;
-  requestAnimationFrame(() => b.classList.add("on"));
-  if (kind === "up") netTimer = setTimeout(() => netBar(null), 2600);
-}
 function pendingCount(){
   let n = 0;
   for (const k of SYNC_KINDS) for (const r of (S[k] || [])) if ((r.u || 0) > PUSHED) n++;
   for (const k of Object.keys(S.tombs || {})) for (const id of Object.keys(S.tombs[k])) if (S.tombs[k][id] > PUSHED) n++;
   return n;
 }
+const isOffline = () => typeof navigator !== "undefined" && navigator.onLine === false;
+
+/* حالة الاتصال — أيقونة واحدة صغيرة، من غير أي شريط بيقطع الشاشة */
+function netState(){
+  if (isOffline()) return { k:"off-line", ic:"cloudoff", t:"أوفلاين" };
+  if (!TOKEN)      return { k:"on-line",  ic:"wifi",     t:"أونلاين" };
+  if (SYNCING)     return { k:"busy",     ic:"cloud",    t:"بيزامن" };
+  try{ stampChanges(); }catch(e){}
+  return pendingCount() > 0
+    ? { k:"pending", ic:"cloud", t:"في انتظار الرفع" }
+    : { k:"on-line", ic:"cloudok", t:"متزامن" };
+}
 function paintNet(){
-  const off = typeof navigator !== "undefined" && navigator.onLine === false;
-  if (off){
-    stampChanges();
-    const n = pendingCount();
-    return netBar("off", n ? `مفيش نت — ${n0(n)} تغيير محفوظ وهيترفع لوحده` : "مفيش نت — الشغل محفوظ على الجهاز");
-  }
-  if (TOKEN && SYNCING) return netBar("wait", "بيرفع البيانات…");
-  netBar(null);
+  const b = $("#btnNet"); if (!b) return;
+  const st = netState();
+  b.classList.remove("on-line","off-line","pending","busy");
+  b.classList.add(st.k);
+  $("#netIc").innerHTML = svg(st.ic);
+  b.setAttribute("aria-label", "حالة الاتصال: " + st.t);
+}
+function openNet(){
+  const off = isOffline(), n = TOKEN ? pendingCount() : 0;
+  const st = netState();
+  const line = (ic, tint, t, d) => `<div class="row" style="padding:10px 0">
+    <div class="ic" style="--tint:${tint}">${svg(ic)}</div>
+    <div class="mid"><div class="t">${t}</div><div class="d" style="white-space:normal">${d}</div></div></div>`;
+
+  let body = `<div class="card" style="text-align:center;padding:20px">
+      <div style="width:58px;height:58px;border-radius:20px;margin:0 auto 10px;display:grid;place-items:center;
+        background:${off?"var(--surf2)":st.k==="pending"?"var(--warn-soft)":"var(--ok-soft)"};
+        color:${off?"var(--ink3)":st.k==="pending"?"var(--warn)":"var(--ok)"}">${svg(st.ic,26)}</div>
+      <div class="dsp" style="font-size:19px">${off?"مفيش نت":TOKEN?(n?`${n0(n)} تغيير مستني`:"كل حاجة متزامنة"):"أونلاين"}</div>
+      <div class="mut" style="font-size:12.5px">${off?"البرنامج شغّال عادي والشغل بيتحفظ":TOKEN?(LASTSYNC?`آخر مزامنة ${relTime(LASTSYNC)}`:"لسه متزامنش"):"المزامنة مش مشغّلة"}</div>
+    </div>
+    <div class="card"><div class="rows">
+      ${line("save","var(--ok)","الشغل محفوظ دايماً","كل حاجة بتتسجّل على الجهاز أول بأول، بنت أو من غيره.")}
+      ${TOKEN
+        ? line("cloud", n?"var(--warn)":"var(--ok)", n?`${n0(n)} تغيير في الطابور`:"مفيش حاجة مستنية",
+            n?"هيترفعوا لوحدهم أول ما النت يرجع.":"كل التغييرات وصلت للسيرفر.")
+        : line("cloud","var(--ink3)","المزامنة مقفولة","شغّلها عشان نفس البيانات تبقى على كل أجهزتك.")}
+    </div></div>`;
+
+  if (TOKEN && !off) body += `<button class="btn wide" id="ntGo">${svg("refresh",16)} زامن دلوقتي</button>`;
+  else if (!TOKEN) body += `<button class="btn wide" id="ntSync">${svg("cloud",16)} شغّل المزامنة</button>`;
+  body += `<div style="height:10px"></div>`;
+
+  sheet("حالة الاتصال", body, () => {
+    if ($("#ntGo")) $("#ntGo").onclick = async () => { closeSheet(); await syncNow(true); };
+    if ($("#ntSync")) $("#ntSync").onclick = () => { closeSheet(); setTimeout(openSync, 240); };
+  });
 }
 function paintSync(){
-  const b = $("#btnSync"); if (!b) return;
-  b.classList.toggle("hide", !TOKEN);
   const w = $("#whoBox"); if (w && !ME) w.classList.add("hide");
-  b.classList.toggle("spin", SYNCING);
   paintNet();
-  b.style.color = SYNC_ERR ? "var(--bad)" : (SYNCING ? "var(--pri)" : "var(--ink2)");
 }
 
 /* ---------- شاشة المزامنة ---------- */
@@ -3488,7 +3584,7 @@ $("#scrim").onclick = closeSheet;
 $("#sheetX").onclick = closeSheet;
 $("#fab").onclick = () => { buzz(); if (SCR === "centers") openDealForm(); else openMoveForm(SCR === "stock" ? "out" : "in"); };
 $("#btnAlerts").onclick = () => { buzz(); openAlerts(); };
-$("#btnSync").onclick = () => { buzz(); syncNow(true); };
+$("#btnNet").onclick = () => { buzz(); openNet(); };
 $("#btnTheme").onclick = () => {
   const order = ["auto","light","dark"], i = order.indexOf(S.cfg.theme);
   setTheme(order[(i+1) % 3]); toast(themeLabel());
@@ -3514,6 +3610,7 @@ addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
   addEventListener("offline", paintNet);
   addEventListener("online", () => { paintNet(); if (TOKEN) syncNow(false); });
   paintNet();
+  setInterval(paintNet, 5000);
   if (location.protocol !== "file:"){
     serverAlive().then(ok => { if (ok && TOKEN) syncNow(false); });
     setInterval(() => { if (TOKEN) syncNow(false); }, 15000);
