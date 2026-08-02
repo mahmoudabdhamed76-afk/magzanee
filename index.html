@@ -350,6 +350,10 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
   transition:transform .3s var(--spring),border-color .2s}
 .logo-pick:active{transform:scale(.94)}
 .logo-pick.has{border-style:solid;border-color:transparent}
+.logo-pick.busy{position:relative}
+.logo-pick.busy::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.45)}
+.logo-pick.busy::before{content:"";position:absolute;z-index:2;width:22px;height:22px;border-radius:50%;
+  border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:spin .7s linear infinite}
 .logo-pick img{width:100%;height:100%;object-fit:cover;display:block}
 
 /* إشارة المرور — اتسلّم / باقي / الإجمالي */
@@ -2129,9 +2133,13 @@ function readAttachment(file){
     r.onerror = () => rej(new Error("read"));
     r.onload = () => {
       const raw = r.result;
-      if (!/^image\//.test(file.type)) return res({ name:file.name, type:file.type, data:raw, size:raw.length });
+      const asIs = () => ({ name:file.name, type:file.type, data:raw, size:raw.length });
+      if (!/^image\//.test(file.type)) return res(asIs());
       const img = new Image();
-      img.onerror = () => res({ name:file.name, type:file.type, data:raw, size:raw.length });
+      let done = false;
+      const ok = (v) => { if (!done){ done = true; res(v); } };
+      setTimeout(() => ok(asIs()), 4000);     /* حارس زي اللوجو */
+      img.onerror = () => ok(asIs());
       img.onload = () => {
         try{
           const MAXD = 1400, sc = Math.min(1, MAXD / Math.max(img.width, img.height));
@@ -2139,38 +2147,68 @@ function readAttachment(file){
           c.width = Math.max(1, Math.round(img.width * sc));
           c.height = Math.max(1, Math.round(img.height * sc));
           const ctx = c.getContext("2d");
-          if (!ctx) return res({ name:file.name, type:file.type, data:raw, size:raw.length });
+          if (!ctx) return ok(asIs());
           ctx.drawImage(img, 0, 0, c.width, c.height);
           const out = c.toDataURL("image/jpeg", 0.72);
           const best = out.length < raw.length ? out : raw;
-          res({ name:file.name, type: best === out ? "image/jpeg" : file.type, data:best, size:best.length });
-        }catch(e){ res({ name:file.name, type:file.type, data:raw, size:raw.length }); }
+          ok({ name:file.name, type: best === out ? "image/jpeg" : file.type, data:best, size:best.length });
+        }catch(e){ ok(asIs()); }
       };
       img.src = raw;
     };
     r.readAsDataURL(file);
   });
 }
+/* اختيار ملف — لازم الـinput يبقى جوّه الصفحة فعلاً،
+   لأن سفاري على الآيفون بيتجاهل أي input متعمول بالـJS ومش متضاف للـDOM */
+function pickFile(accept){
+  return new Promise(resolve => {
+    const inp = document.createElement("input");
+    inp.type = "file";
+    if (accept) inp.accept = accept;
+    inp.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1";
+    document.body.appendChild(inp);
+    let done = false;
+    const finish = (f) => {
+      if (done) return; done = true;
+      setTimeout(() => { try{ inp.remove(); }catch(e){} }, 300);
+      resolve(f || null);
+    };
+    inp.addEventListener("change", () => finish(inp.files && inp.files[0]));
+    inp.addEventListener("cancel", () => finish(null));
+    /* لو المستخدم قفل شاشة الاختيار من غير ما يختار */
+    const onBack = () => {
+      window.removeEventListener("focus", onBack);
+      setTimeout(() => { if (!inp.files || !inp.files.length) finish(null); }, 900);
+    };
+    setTimeout(() => window.addEventListener("focus", onBack), 400);
+    inp.click();
+  });
+}
+
 /* اللوجو بيتصغّر لمربع ٢٥٦ عشان ميكبّرش حجم البيانات */
 function readLogo(file){
   return new Promise((res, rej) => {
     const r = new FileReader();
-    r.onerror = () => rej(new Error("read"));
+    let done = false;
+    const ok = (v) => { if (!done){ done = true; res(v); } };
+    r.onerror = () => { if (!done){ done = true; rej(new Error("read")); } };
     r.onload = () => {
       const raw = r.result;
       const img = new Image();
-      img.onerror = () => res(raw);
+      setTimeout(() => ok(raw), 4000);        /* حارس: لو الصورة معرفتش تتفك */
+      img.onerror = () => ok(raw);
       img.onload = () => {
         try{
           const D = 256, c = document.createElement("canvas");
           c.width = D; c.height = D;
           const ctx = c.getContext("2d");
-          if (!ctx) return res(raw);
+          if (!ctx) return ok(raw);
           const side = Math.min(img.width, img.height);
           ctx.drawImage(img, (img.width-side)/2, (img.height-side)/2, side, side, 0, 0, D, D);
           const out = c.toDataURL("image/jpeg", 0.8);
-          res(out.length < raw.length ? out : raw);
-        }catch(e){ res(raw); }
+          ok(out.length < raw.length ? out : raw);
+        }catch(e){ ok(raw); }
       };
       img.src = raw;
     };
@@ -2192,19 +2230,17 @@ function bindAtt(){
   box.innerHTML = attBoxHTML();
   const btn = $("#attBtn"), rm = $("#attRm");
   if (rm) rm.onclick = () => { mfFile = null; buzz(); bindAtt(); };
-  if (btn) btn.onclick = () => {
-    const inp = document.createElement("input");
-    inp.type = "file"; inp.accept = "image/*,application/pdf";
-    inp.onchange = async () => {
-      const f = inp.files && inp.files[0]; if (!f) return;
-      toast("بيحمّل الملف…");
-      try{
-        const a = await readAttachment(f);
-        if (a.size > MAX_ATT) return toast("الملف كبير أوي — جرّب صورة أصغر");
-        mfFile = a; buzz(14); bindAtt(); toast("الملف اتّرفق");
-      }catch(e){ toast("مقدرش يقرا الملف"); }
-    };
-    inp.click();
+  if (btn) btn.onclick = async () => {
+    let f;
+    try{ f = await pickFile("image/*,application/pdf"); }
+    catch(e){ return toast("مقدرش يفتح الملفات"); }
+    if (!f) return;
+    toast("بيحمّل الملف…");
+    try{
+      const a = await readAttachment(f);
+      if (a.size > MAX_ATT) return toast("الملف كبير أوي — جرّب صورة أصغر");
+      mfFile = a; buzz(14); bindAtt(); toast("الملف اتّرفق");
+    }catch(e){ toast("مقدرش يقرا الملف"); }
   };
 }
 
@@ -2690,18 +2726,32 @@ function openPartyForm(id, after){
         $("#pLogoRm").onclick = () => { logo = ""; buzz(); paintLogo(); };
       } else if (!logo && rm){ rm.previousSibling.remove?.(); rm.remove(); }
     };
-    const pickLogo = () => {
-      const inp = document.createElement("input");
-      inp.type = "file"; inp.accept = "image/*";
-      inp.onchange = async () => {
-        const f = inp.files && inp.files[0]; if (!f) return;
-        toast("بيجهّز اللوجو…");
-        try{
-          const a = await readLogo(f);
-          logo = a; buzz(14); paintLogo(); toast("اللوجو اتحط");
-        }catch(e){ toast("مقدرش يقرا الصورة"); }
-      };
-      inp.click();
+    const pickLogo = async () => {
+      const box = $("#pLogo");
+      let f;
+      try{ f = await pickFile("image/*"); }
+      catch(e){ return toast("مقدرش يفتح الملفات"); }
+      if (!f) return;
+      if (!/^image\//.test(f.type || "") && !/\.(jpe?g|png|webp|heic|heif|gif)$/i.test(f.name || ""))
+        return toast("اختار صورة");
+
+      /* معاينة فورية قبل الضغط */
+      let preview = "";
+      try{ preview = URL.createObjectURL(f); box.classList.add("has"); box.innerHTML = `<img src="${preview}" alt="">`; }catch(e){}
+      box.classList.add("busy");
+      try{
+        const a = await readLogo(f);
+        logo = a;
+        box.classList.remove("busy");
+        buzz(14); paintLogo();
+        toast("اللوجو جاهز — اضغط احفظ");
+      }catch(e){
+        box.classList.remove("busy");
+        logo = ""; paintLogo();
+        toast("مقدرش يقرا الصورة — جرّب صورة تانية");
+      }finally{
+        if (preview) setTimeout(() => { try{ URL.revokeObjectURL(preview); }catch(e){} }, 1200);
+      }
     };
     $("#pLogo").onclick = pickLogo;
     $("#pLogoBtn").onclick = pickLogo;
@@ -2820,11 +2870,10 @@ function doExport(){
   dl(`mystock-${todayISO()}.json`, JSON.stringify(S, null, 1));
   toast("النسخة اتصدّرت");
 }
-function doImport(){
-  const inp = document.createElement("input");
-  inp.type = "file"; inp.accept = ".json,application/json";
-  inp.onchange = () => {
-    const f = inp.files[0]; if (!f) return;
+async function doImport(){
+  const f = await pickFile(".json,application/json");
+  if (!f) return;
+  {
     const r = new FileReader();
     r.onload = () => {
       try{
@@ -2836,9 +2885,9 @@ function doImport(){
         toast(`اتسحب ${n0(S.items.length)} صنف و${n0(S.moves.length)} حركة`);
       }catch(e){ toast("الملف مش مظبوط"); }
     };
+    r.onerror = () => toast("مقدرش يقرا الملف");
     r.readAsText(f);
-  };
-  inp.click();
+  }
 }
 function doCSV(){
   const head = ["التاريخ","النوع","الصنف","الكود","المقاس","الوحدة","الكمية","بالعلب","المخزن","إلى مخزن","الجهة","السعر","الإجمالي","فاتورة","ملاحظة","مرفق"];
