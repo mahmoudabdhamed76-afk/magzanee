@@ -137,10 +137,15 @@ main{padding:14px 16px calc(var(--nav-h) + var(--safe-b) + 26px)}
 /* ===================== SCREEN TRANSITIONS ===================== */
 .screen{display:none}
 .screen.on{display:block}
-@keyframes scr-in-f{from{opacity:0;transform:translate3d(26px,0,0)}to{opacity:1;transform:none}}
-@keyframes scr-in-b{from{opacity:0;transform:translate3d(-26px,0,0)}to{opacity:1;transform:none}}
-.screen.on.fwd{animation:scr-in-f .34s var(--out) both}
-.screen.on.bwd{animation:scr-in-b .34s var(--out) both}
+/* الشاشة ثابتة — دخول رأسي خفيف بس، من غير أي تحريك يمين وشمال */
+@keyframes scr-in{from{opacity:0;transform:translate3d(0,10px,0)}to{opacity:1;transform:none}}
+.screen.on.fwd,.screen.on.bwd{animation:scr-in .26s var(--out) both}
+/* حافة السحب للرجوع */
+#edge{position:fixed;top:0;bottom:var(--nav-h);inset-inline-start:0;width:24px;z-index:45}
+#edgeHint{position:fixed;top:50%;inset-inline-start:0;z-index:46;transform:translate(-100%,-50%);
+  width:44px;height:44px;border-radius:0 22px 22px 0;background:var(--pri);color:var(--pri-ink);
+  display:grid;place-items:center;box-shadow:var(--sh-2);opacity:0;pointer-events:none;transition:opacity .15s}
+html[dir="rtl"] #edgeHint{border-radius:22px 0 0 22px;transform:translate(100%,-50%)}
 @keyframes rise{from{opacity:0;transform:translate3d(0,16px,0)}to{opacity:1;transform:none}}
 .screen.on.anim > *{animation:rise .46s var(--out) both}
 .screen.on.anim > *:nth-child(1){animation-delay:.02s}
@@ -374,6 +379,9 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.28}}
 .tl .blink .lamp{animation:blink 1.15s ease-in-out infinite}
 .tl .blink .n{animation:blink 1.15s ease-in-out infinite}
+.ans{margin-top:12px;padding-top:12px;border-top:1px solid var(--line2);animation:rise .35s var(--out) both}
+.ans-t{font-family:"Zain";font-weight:900;font-size:19px;line-height:1.3;margin-bottom:5px}
+.ans-d{font-size:13px;line-height:1.9;color:var(--ink2)}
 .rm-btn{width:32px;height:32px;border-radius:11px;flex:none;display:grid;place-items:center;background:var(--bad-soft);color:var(--bad);margin-inline-start:6px;transition:transform .3s var(--spring)}
 .rm-btn:active{transform:scale(.85)}
 .att-view{width:100%;border-radius:14px;display:block;margin-top:10px;border:1px solid var(--line)}
@@ -390,7 +398,9 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
   max-height:92vh;display:flex;flex-direction:column;
 }
 .sheet.on{transform:translateY(0)}
-.sheet-grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:10px auto 4px;flex:none}
+.sheet-grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:10px auto 4px;flex:none;touch-action:none}
+.sheet-h{touch-action:none}
+.sheet-x{touch-action:manipulation}
 .sheet-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 18px 10px;flex:none}
 .sheet-h h3{margin:0;font-size:17px;font-weight:700}
 .sheet-b{padding:4px 18px calc(20px + var(--safe-b));overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -606,6 +616,7 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
   </nav>
 </div>
 
+<div id="edge"></div><div id="edgeHint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px"><path d="M15 5 8 12l7 7"/></svg></div>
 <div class="scrim" id="scrim"></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true">
   <div class="sheet-grip"></div>
@@ -681,6 +692,17 @@ const CATS = {
   misc:{ ar:"مستلزمات", tint:"var(--c-misc)", ic:"box" },
 };
 const UNITS = ["ورقة","فرخ","بكرة","لفة","علبة","كرتونة","قطعة","لتر","كيلو"];
+/* كل تصنيف وحداته المقترحة وحقوله الخاصة */
+const CAT_KIT = {
+  thermal:{ units:["ورقة","بكرة","لفة"],           kind:"paper" },
+  photo:  { units:["ورقة","فرخ","علبة"],           kind:"paper" },
+  plastic:{ units:["ورقة","فرخ","علبة"],           kind:"paper" },
+  film:   { units:["ورقة","فرخ","علبة"],           kind:"paper" },
+  chem:   { units:["لتر","علبة","كيلو"],           kind:"chem"  },
+  ink:    { units:["علبة","قطعة","كرتونة"],        kind:"ink"   },
+  misc:   { units:["قطعة","علبة","كرتونة","كيلو"], kind:"misc"  },
+};
+const catKind = (c) => (CAT_KIT[c] ? CAT_KIT[c].kind : "misc");
 const SHEETY = ["ورقة","فرخ"];   /* وحدات بتتعبأ في علب */
 
 const MOVES = {
@@ -748,6 +770,9 @@ const I = {
   eye:'<path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.8"/>',
   camera:'<path d="M3 8.5h3.5L8 6h8l1.5 2.5H21v11H3z"/><circle cx="12" cy="13.5" r="3.4"/>',
 };
+const BRAND_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M2.6 9.6 12 4.2l9.4 5.4"/><path d="M4.4 10.7V20h15.2v-9.3"/><path d="M2.6 20h18.8"/>
+  <rect x="8.4" y="13.2" width="7.2" height="6.8" rx="1"/><path d="M8.4 16.6h7.2M12 13.2V20"/></svg>`;
 const svg = (name, w) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"${w?` style="width:${w}px;height:${w}px"`:""}>${I[name]||I.box}</svg>`;
 
 /* ---------- التخزين ---------- */
@@ -985,10 +1010,12 @@ function dailySeries(days, itemId, kind){
 /* =========================================================
    التنقّل بين الشاشات
    ========================================================= */
+let NAVHIST = [];
 function go(scr, back){
   if (scr === SCR) return;
-  const from = SCR_ORDER.indexOf(SCR), to = SCR_ORDER.indexOf(scr);
-  const dir = back ? "bwd" : (to > from ? "fwd" : "bwd");
+  if (back) NAVHIST.pop();
+  else { NAVHIST.push(SCR); if (NAVHIST.length > 12) NAVHIST.shift(); }
+  const dir = back ? "bwd" : "fwd";
   SCR = scr;
   $$(".screen").forEach(el => el.classList.remove("on","fwd","bwd","anim"));
   $$("#nav button").forEach(b => b.classList.toggle("on", b.dataset.scr === scr));
@@ -997,6 +1024,13 @@ function go(scr, back){
   el.classList.add("on", dir, "anim");
   window.scrollTo({ top:0, behavior:"instant" });
   setTimeout(() => el.classList.remove("anim"), 900);
+}
+/* رجوع: يقفل الشيت الأول، وبعدين يرجّع شاشة */
+function goBack(){
+  if ($("#sheet").classList.contains("on")){ closeSheet(); return true; }
+  if (NAVHIST.length){ go(NAVHIST[NAVHIST.length-1], true); return true; }
+  if (SCR !== "home"){ go("home", true); return true; }
+  return false;
 }
 function render(){
   ({ home:renderHome, stock:renderStock, centers:renderCenters, moves:renderMoves, reports:renderReports, more:renderMore }[SCR] || renderHome)();
@@ -1012,6 +1046,18 @@ function refreshBadges(){
   bc.textContent = n0(openDeals); bc.classList.toggle("hide", openDeals === 0);
   $("#brandName").textContent = S.cfg.biz || "مخزوني";
   $("#brandSub").textContent = S.cfg.sub || "إدارة المخزن والاستهلاك";
+  const mk = $(".brand .mark");
+  if (mk){
+    if (S.cfg.logo && mk.dataset.logo !== S.cfg.logo){
+      mk.dataset.logo = S.cfg.logo;
+      mk.style.background = "none";
+      mk.innerHTML = `<img src="${S.cfg.logo}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit">`;
+    } else if (!S.cfg.logo && mk.dataset.logo){
+      mk.dataset.logo = "";
+      mk.style.background = "";
+      mk.innerHTML = BRAND_SVG;
+    }
+  }
 }
 
 /* =========================================================
@@ -1077,7 +1123,7 @@ function renderHome(){
   const t = todayISO();
   const live = S.items.filter(i => !i.archived);
   const rows = live.map(i => ({ it:i, b:balance(i.id), cv:coverage(i.id) }));
-  const risky = rows.filter(x => x.cv !== Infinity).sort((a,b) => a.cv - b.cv)[0];
+  const risky = rows.map(x => ({ ...x, a:avgDaily(x.it.id) })).filter(x => x.cv !== Infinity).sort((a,b) => a.cv - b.cv)[0];
   const A = alerts();
   const monthFrom = addDays(t,-29);
   const todayOut = consumedBetween(null, t, t);
@@ -1105,11 +1151,16 @@ function renderHome(){
   } else {
     const st = covState(risky.cv);
     const ringTint = st === "bad" ? "#FF8A80" : st === "warn" ? "#FFD16B" : "#5BE3A7";
+    const days = Math.floor(risky.cv);
+    const runOut = addDays(t, days);
+    const ro = new Date(runOut + "T00:00:00");
+    const lead = risky.it.lead || 0;
+    const orderBy = lead ? addDays(runOut, -lead) : "";
     hero = `<div class="hero">
       ${heroRing(fillPct(), ringTint)}
-      <div class="lbl">${svg("clock",14)} <span>أقرب صنف يخلص</span></div>
-      <div class="big dsp">${n0(risky.cv)}<span class="unit">يوم تغطية</span></div>
-      <div class="note">${esc(risky.it.name)} — رصيد ${n1(risky.b)} ${esc(risky.it.unit)} · ${COV_LBL[st]}</div>
+      <div class="lbl">${svg("clock",14)} <span>أول صنف هيخلص</span></div>
+      <div class="big dsp">${n0(ro.getDate())} ${AR_MON[ro.getMonth()]}<span class="unit">${days<=0?"دلوقتي":days===1?"بكرة":`بعد ${n0(days)} يوم`}</span></div>
+      <div class="note">${esc(risky.it.name)} — فاضل ${n1(risky.b)} ${esc(risky.it.unit)} وبتصرف ${n1(risky.a)} في اليوم${orderBy && days>0 ? ` · اطلب قبل ${fDate(orderBy)}` : ""}</div>
       ${heroGrid(val, belowMin, monthOut)}
     </div>`;
   }
@@ -1205,8 +1256,7 @@ function renderHome(){
   $$("#s-home [data-center]").forEach(el => el.onclick = () => openCenter(el.dataset.center));
   $$("#s-home [data-bitem]").forEach(el => el.onclick = () => openItem(el.dataset.bitem));
   $$("#s-home [data-move]").forEach(el => el.onclick = () => openMoveDetail(el.dataset.move));
-  const big = $("#s-home .hero .big");
-  if (big && risky) countUp(big, risky.cv, v => n0(v));
+
 }
 function stat(ic, k, v, sub, tint, act){
   return `<div class="stat" style="--tint:${tint}" onclick="${act}">
@@ -1877,6 +1927,10 @@ function renderMore(){
     R("wallet","var(--c-photo)","طلبيات المراكز",`${n0(S.deals.length)} طلبية · ${n0(S.deals.filter(d=>dealRemaining(d)>0).length)} مفتوحة`,"deals")
   );
 
+  h += grp("المساعد",
+    R("spark","var(--acc)","اسأل المساعد","إجابات فورية من بيانات مخزنك","ask")
+  );
+
   h += grp("المستخدم والصلاحيات",
     R("user", avColor(ME), ME?esc(ME.name):"—", ME?`@${esc(ME.user)} · ${ROLES[ME.role]?.ar||""}`:"", "me") +
     (can("admin") ? R("users","var(--c-film)","إدارة المستخدمين",`${n0(S.users.length)} حساب`,"users") : "") +
@@ -1914,6 +1968,7 @@ function themeLabel(){ return { auto:"تلقائي حسب الجهاز", light:"
 function moreAction(a){
   buzz();
   if (a === "items") openItemsList();
+  if (a === "ask"){ askOpen = -1; askQ = ""; renderAsk(); }
   if (a === "users") openUsers();
   if (a === "me") openMe();
   if (a === "logout") openLogout();
@@ -1942,12 +1997,20 @@ function sheet(title, html, onOpen){
   $("#sheet").classList.add("on");
   $("#scrim").classList.add("on");
   document.body.style.overflow = "hidden";
+  $("#sheetBody").scrollTop = 0;
+  /* الربط هنا كل مرة — عشان ميحصلش إن الزرار يفضل مربوط بشاشة قديمة */
+  const x = $("#sheetX");
+  x.onclick = (e) => { e.preventDefault(); e.stopPropagation(); closeSheet(); };
+  x.ontouchend = (e) => { e.preventDefault(); closeSheet(); };
   if (onOpen) onOpen();
 }
 function closeSheet(){
-  $("#sheet").classList.remove("on");
+  const sh = $("#sheet");
+  sh.classList.remove("on");
+  sh.style.transform = "";
   $("#scrim").classList.remove("on");
   document.body.style.overflow = "";
+  try{ document.activeElement && document.activeElement.blur(); }catch(e){}
 }
 
 /* ---------- تفاصيل صنف ---------- */
@@ -1964,7 +2027,7 @@ function openItem(id){
     <div style="width:46px;height:46px;border-radius:15px;flex:none;display:grid;place-items:center;background:color-mix(in srgb,${tint} 14%,transparent);color:${tint}">${svg(icOf(it),22)}</div>
     <div style="flex:1;min-width:0">
       <div style="font-size:16px;font-weight:700">${esc(it.name)}</div>
-      <div class="mut2" style="font-size:12px">${[it.code, it.size, CATS[it.cat]?.ar].filter(Boolean).map(esc).join(" · ")}</div>
+      <div class="mut2" style="font-size:12px">${[it.code, it.size, CATS[it.cat]?.ar, it.color, it.model].filter(Boolean).map(esc).join(" · ")}</div>
     </div>
     <button class="icon-btn" onclick="openItemForm('${id}')">${svg("edit",17)}</button>
   </div>
@@ -2042,17 +2105,10 @@ function openItemForm(id){
     <div class="picks" id="fCats">${Object.entries(CATS).map(([k,v]) => `<button class="pick ${formCat===k?"on":""}" data-c="${k}">${v.ar}</button>`).join("")}</div>
   </div>
   <div class="field"><label>وحدة القياس</label>
-    <div class="picks" id="fUnits">${UNITS.map(u => `<button class="pick ${formUnit===u?"on":""}" data-u="${esc(u)}">${u}</button>`).join("")}</div>
-    <div class="hint">الرصيد كله بيتحسب بالوحدة دي — الأفضل «ورقة».</div>
+    <div class="picks" id="fUnits"></div>
+    <div class="hint" id="fUnitHint"></div>
   </div>
-  <div class="grid2">
-    <div class="field"><label>عدد الأوراق في العلبة</label>
-      <input id="fPack" type="number" inputmode="numeric" value="${it&&it.pack?it.pack:""}" placeholder="٦٠٠">
-      <div class="hint">للتحويل التلقائي</div></div>
-    <div class="field"><label>خطوة زرار +</label>
-      <input id="fStep" type="number" inputmode="numeric" value="${it&&it.step?it.step:""}" placeholder="١٠٠">
-      <div class="hint">كل ضغطة تزوّد كام</div></div>
-  </div>
+  <div id="fKit"></div>
   <div class="grid2">
     <div class="field"><label>سعر الوحدة الواحدة</label><input id="fCost" type="number" inputmode="decimal" value="${it&&it.cost?it.cost:""}" placeholder="٠"></div>
     <div class="field"><label>حد الطلب</label><input id="fMin" type="number" inputmode="decimal" value="${it&&it.min?it.min:""}" placeholder="٠"></div>
@@ -2072,15 +2128,82 @@ function openItemForm(id){
   <div style="height:10px"></div>`;
 
   sheet(it ? "تعديل صنف" : "صنف جديد", h, () => {
-    $$("#fCats .pick").forEach(b => b.onclick = () => { formCat = b.dataset.c; $$("#fCats .pick").forEach(x => x.classList.toggle("on", x === b)); buzz(6); });
-    $$("#fUnits .pick").forEach(b => b.onclick = () => { formUnit = b.dataset.u; $$("#fUnits .pick").forEach(x => x.classList.toggle("on", x === b)); buzz(6); });
+    /* الوحدات والحقول بتتغيّر مع التصنيف — الحبر مش هيتسأل عن أوراق في العلبة */
+    const drawUnits = () => {
+      const kit = CAT_KIT[formCat] || CAT_KIT.misc;
+      const list = kit.units.concat(UNITS.filter(u => !kit.units.includes(u)));
+      if (!kit.units.includes(formUnit) && !(it && it.unit === formUnit)) formUnit = kit.units[0];
+      $("#fUnits").innerHTML = list.map(u =>
+        `<button class="pick ${formUnit===u?"on":""}" data-u="${esc(u)}">${u}</button>`).join("");
+      $$("#fUnits .pick").forEach(b => b.onclick = () => {
+        formUnit = b.dataset.u; $$("#fUnits .pick").forEach(x => x.classList.toggle("on", x === b));
+        buzz(6); drawKit(); hintUnit();
+      });
+      hintUnit();
+    };
+    const hintUnit = () => {
+      const k = catKind(formCat);
+      $("#fUnitHint").textContent =
+        k === "paper" ? "الرصيد بيتحسب بالوحدة دي — الأفضل «ورقة»."
+        : k === "ink" ? "الأحبار بتتحسب بالعلبة أو القطعة."
+        : k === "chem" ? "الكيماويات بتتحسب باللتر أو العلبة."
+        : "اختار الوحدة اللي بتتعامل بيها.";
+    };
+    const drawKit = () => {
+      const k = catKind(formCat), sheety = SHEETY.includes(formUnit);
+      let kit = "";
+      if (k === "paper"){
+        kit = `<div class="grid2">
+          <div class="field"><label>${sheety?"عدد الأوراق في العلبة":"عدد الأوراق في الوحدة"}</label>
+            <input id="fPack" type="number" inputmode="numeric" value="${it&&it.pack?it.pack:""}" placeholder="٦٠٠">
+            <div class="hint">للتحويل التلقائي</div></div>
+          <div class="field"><label>خطوة زرار +</label>
+            <input id="fStep" type="number" inputmode="numeric" value="${it&&it.step?it.step:""}" placeholder="١٠٠">
+            <div class="hint">كل ضغطة تزوّد كام</div></div>
+        </div>`;
+      } else if (k === "ink"){
+        kit = `<div class="grid2">
+          <div class="field"><label>اللون</label>
+            <input id="fColor" value="${esc(it?it.color:"")}" placeholder="أسود / أزرق / ملوّن"></div>
+          <div class="field"><label>رقم الكاسيت</label>
+            <input id="fModel" value="${esc(it?it.model:"")}" placeholder="مثال: UPP-110"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>العلبة تكفي كام صورة</label>
+            <input id="fYield" type="number" inputmode="numeric" value="${it&&it.yield?it.yield:""}" placeholder="٢٠٠">
+            <div class="hint">عشان نعرف تكلفة الصورة</div></div>
+          <div class="field"><label>خطوة زرار +</label>
+            <input id="fStep" type="number" inputmode="numeric" value="${it&&it.step?it.step:""}" placeholder="١">
+            <div class="hint">للعلب: ١</div></div>
+        </div>`;
+      } else if (k === "chem"){
+        kit = `<div class="grid2">
+          <div class="field"><label>حجم العبوة (${esc(formUnit)})</label>
+            <input id="fPack" type="number" inputmode="decimal" value="${it&&it.pack?it.pack:""}" placeholder="٥"></div>
+          <div class="field"><label>خطوة زرار +</label>
+            <input id="fStep" type="number" inputmode="numeric" value="${it&&it.step?it.step:""}" placeholder="١"></div>
+        </div>`;
+      } else {
+        kit = `<div class="field"><label>خطوة زرار +</label>
+          <input id="fStep" type="number" inputmode="numeric" value="${it&&it.step?it.step:""}" placeholder="١"></div>`;
+      }
+      $("#fKit").innerHTML = kit;
+    };
+    $$("#fCats .pick").forEach(b => b.onclick = () => {
+      formCat = b.dataset.c; $$("#fCats .pick").forEach(x => x.classList.toggle("on", x === b));
+      buzz(6); drawUnits(); drawKit();
+    });
+    drawUnits(); drawKit();
     $("#fSave").onclick = () => {
       const name = $("#fName").value.trim();
       if (!name) return toast("اكتب اسم الصنف الأول");
       const obj = {
         name, code:$("#fCode").value.trim(), size:$("#fSize").value.trim(), cat:formCat, unit:formUnit,
         cost:+$("#fCost").value || 0, min:+$("#fMin").value || 0, max:+$("#fMax").value || 0,
-        pack:+$("#fPack").value || 0, step:+$("#fStep").value || 0,
+        pack:+(($("#fPack")||{}).value) || 0, step:+(($("#fStep")||{}).value) || 0,
+        color:(($("#fColor")||{}).value || "").trim(),
+        model:(($("#fModel")||{}).value || "").trim(),
+        yield:+(($("#fYield")||{}).value) || 0,
         lead:+$("#fLead").value || 0, exp:$("#fExp").value || "", note:$("#fNote").value.trim()
       };
       if (it){ Object.assign(it, obj); toast("اتحفظ"); }
@@ -2278,7 +2401,8 @@ function drawMoveForm(){
   const sheety = isSheet(it);
   const P = sheety ? it.pack : 0;
   const paper = !!(it && SHEETY.includes(it.unit));      /* الصنف بيتحسب بالورقة */
-  const STEP = Math.max(1, (it && it.step) || 100);        /* كل ضغطة على + بتزوّد كام — افتراضي ١٠٠ */
+  const kind = it ? catKind(it.cat) : "misc";
+  const STEP = Math.max(1, (it && it.step) || (paper ? 100 : 1));   /* الورق بالمية، وغيره واحد واحد */
   const qDefault = isAdj ? (Math.round(cur*100)/100) : STEP;
   let QK = takes
     ? [STEP, STEP*5, STEP*10, P, Math.round(cur)]
@@ -2787,11 +2911,44 @@ function openPartyForm(id, after){
 
 /* ---------- إعدادات ---------- */
 function openBiz(){
-  const h = `<div class="field"><label>اسم الشركة أو المخزن</label><input id="bName" value="${esc(S.cfg.biz)}"></div>
+  if (!need("edit")) return;
+  let logo = S.cfg.logo || "";
+  const h = `<div class="field" style="text-align:center">
+    <button class="logo-pick ${logo?"has":""}" id="bLogo">${logo?`<img src="${logo}" alt="">`:svg("camera",26)}</button>
+    <div class="hint" style="text-align:center">
+      <span id="bLogoBtn" style="color:var(--pri);font-weight:700">${logo?"غيّر لوجو الشركة":"ضيف لوجو الشركة"}</span>
+      <span id="bLogoRmW">${logo?` · <span id="bLogoRm" style="color:var(--bad);font-weight:700">شيله</span>`:""}</span>
+    </div></div>
+  <div class="field"><label>اسم الشركة أو المخزن</label><input id="bName" value="${esc(S.cfg.biz)}"></div>
   <div class="field"><label>السطر التحتاني</label><input id="bSub" value="${esc(S.cfg.sub)}"></div>
+  <div class="hint" style="margin:-4px 0 14px">اللوجو بيظهر فوق جنب الاسم، وفي شاشة الدخول، وفي التقارير المطبوعة.</div>
   <button class="btn wide" id="bSave">${svg("check",16)} احفظ</button><div style="height:10px"></div>`;
   sheet("بيانات الشركة", h, () => {
-    $("#bSave").onclick = () => { S.cfg.biz = $("#bName").value.trim() || "مخزوني"; S.cfg.sub = $("#bSub").value.trim(); persist(); closeSheet(); render(); toast("اتحفظ"); };
+    const paint = () => {
+      const el = $("#bLogo");
+      el.classList.toggle("has", !!logo);
+      el.innerHTML = logo ? `<img src="${logo}" alt="">` : svg("camera",26);
+      $("#bLogoBtn").textContent = logo ? "غيّر لوجو الشركة" : "ضيف لوجو الشركة";
+      $("#bLogoRmW").innerHTML = logo ? ` · <span id="bLogoRm" style="color:var(--bad);font-weight:700">شيله</span>` : "";
+      if ($("#bLogoRm")) $("#bLogoRm").onclick = () => { logo = ""; buzz(); paint(); };
+    };
+    const pick = async () => {
+      const box = $("#bLogo");
+      const f = await pickFile("image/*"); if (!f) return;
+      let pv = ""; try{ pv = URL.createObjectURL(f); box.classList.add("has"); box.innerHTML = `<img src="${pv}" alt="">`; }catch(e){}
+      box.classList.add("busy");
+      try{ logo = await readLogo(f); box.classList.remove("busy"); buzz(14); paint(); toast("اللوجو جاهز — اضغط احفظ"); }
+      catch(e){ box.classList.remove("busy"); logo = ""; paint(); toast("مقدرش يقرا الصورة"); }
+      finally{ if (pv) setTimeout(() => { try{ URL.revokeObjectURL(pv); }catch(e){} }, 1200); }
+    };
+    $("#bLogo").onclick = pick; $("#bLogoBtn").onclick = pick;
+    if ($("#bLogoRm")) $("#bLogoRm").onclick = () => { logo = ""; buzz(); paint(); };
+    $("#bSave").onclick = () => {
+      S.cfg.biz = $("#bName").value.trim() || "مخزوني";
+      S.cfg.sub = $("#bSub").value.trim();
+      S.cfg.logo = logo;
+      persist(); closeSheet(); render(); toast("اتحفظ");
+    };
   });
 }
 function openLimits(){
@@ -2955,7 +3112,9 @@ function printReport(){
     tr:nth-child(even) td{background:#FAFBFD}
     @media print{ body{padding:0} }
   </style></head><body>
-  <h1>${esc(S.cfg.biz||"مخزوني")} — تقرير المخزون والاستهلاك</h1>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px">
+    ${S.cfg.logo?`<img src="${S.cfg.logo}" style="width:54px;height:54px;border-radius:12px;object-fit:cover">`:""}
+    <h1 style="margin:0">${esc(S.cfg.biz||"مخزوني")} — تقرير المخزون والاستهلاك</h1></div>
   <div class="sub">${fDateFull(t)} · فترة الاستهلاك: آخر ${n0(repRange)} يوم</div>
   <div class="kpis">
     <div class="kpi"><b>${n0(live.length)}</b><span>صنف نشط</span></div>
@@ -3026,15 +3185,18 @@ const byName  = (id) => { const u = (S.users||[]).find(x => x.id === id); return
 /* ---------- شاشة الدخول ---------- */
 function authView(mode){
   const box = $("#authBox");
-  const brand = `<div class="auth-crest">
+  const brand = S.cfg.logo
+    ? `<div class="auth-crest" style="background:none;overflow:hidden"><img src="${S.cfg.logo}" alt="" style="width:100%;height:100%;object-fit:cover"></div>`
+    : `<div class="auth-crest">
       <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="width:38px;height:38px">
         <path d="M2.6 9.6 12 4.2l9.4 5.4"/><path d="M4.4 10.7V20h15.2v-9.3"/><path d="M2.6 20h18.8"/>
         <rect x="8.4" y="13.2" width="7.2" height="6.8" rx="1"/><path d="M8.4 16.6h7.2M12 13.2V20"/></svg>
     </div>`;
+  const bizName = S.cfg.biz || "مخزوني";
 
   if (mode === "setup"){
     box.innerHTML = `${brand}
-      <div class="auth-title"><h2>مخزوني</h2><p>أول تشغيل — اعمل حساب المدير</p></div>
+      <div class="auth-title"><h2>${esc(bizName)}</h2><p>أول تشغيل — اعمل حساب المدير</p></div>
       <div class="field"><label>الاسم</label><input id="suName" placeholder="اسمك"></div>
       <div class="field"><label>اسم المستخدم</label><input id="suUser" autocapitalize="off" placeholder="بالإنجليزي من غير مسافات"></div>
       <div class="field"><label>كلمة السر</label><input id="suPass" type="password" placeholder="٦ حروف على الأقل"></div>
@@ -3065,7 +3227,7 @@ function authView(mode){
   }
 
   box.innerHTML = `${brand}
-    <div class="auth-title"><h2>مخزوني</h2><p>سجّل دخولك عشان تكمّل</p></div>
+    <div class="auth-title"><h2>${esc(bizName)}</h2><p>سجّل دخولك عشان تكمّل</p></div>
     <div class="field"><label>اسم المستخدم</label><input id="lgUser" autocapitalize="off" placeholder="اسم المستخدم"></div>
     <div class="field"><label>كلمة السر</label><input id="lgPass" type="password" placeholder="••••••"></div>
     <button class="btn wide" id="lgGo">${svg("lock",16)} دخول</button>
@@ -3199,6 +3361,204 @@ function openLogout(){
     <div class="card tight" style="background:var(--info-soft);border-color:transparent"><div style="font-size:12.5px;line-height:1.6">البيانات هتفضل زي ما هي — الخروج بيقفل الجلسة على الجهاز ده بس.</div></div>
     <button class="btn danger wide" id="loGo">${svg("logout",15)} أيوة اخرج</button><div style="height:10px"></div>`;
   sheet("تسجيل الخروج", h, () => { $("#loGo").onclick = signOut; });
+}
+
+/* =========================================================
+   المساعد الذكي — بيرد من بيانات البرنامج نفسه، بدون نت
+   ========================================================= */
+function askAnswers(){
+  const t = todayISO(), m30 = addDays(t,-29), m7 = addDays(t,-6);
+  const live = S.items.filter(i => !i.archived);
+  const rows = live.map(i => ({ it:i, b:balance(i.id), cv:coverage(i.id), a:avgDaily(i.id) }));
+  const Q = [];
+  const money0 = (v) => money(v);
+
+  /* ١ — إيه اللي محتاج طلبية */
+  Q.push({ q:"إيه اللي محتاج أطلبه دلوقتي؟", ic:"down", tint:"var(--bad)", key:"طلب اطلب اشتري ناقص محتاج",
+    a(){
+      const need = rows.filter(x => x.cv !== Infinity && x.cv <= 30).sort((a,b) => a.cv - b.cv);
+      if (!need.length) return { t:"مفيش حاجة مستعجلة 👌", d:"كل الأصناف تغطيتها أكتر من شهر." };
+      return { t:`${n0(need.length)} صنف محتاج طلبية`, d:need.slice(0,6).map(x => {
+        let sug = Math.max(x.it.min||0, Math.ceil(x.a*45));
+        if (isSheet(x.it)) sug = Math.ceil(sug/x.it.pack)*x.it.pack;
+        return `• ${x.it.name}: فاضل ${n1(x.b)} ${x.it.unit} (يكفي ${n0(x.cv)} يوم) — اطلب حوالي ${n0(sug)}`;
+      }).join("\n"), go:()=>go("reports") };
+    }});
+
+  /* ٢ — أول صنف هيخلص */
+  Q.push({ q:"إمتى أول صنف هيخلص؟", ic:"clock", tint:"var(--acc)", key:"يخلص خلص متى امتى اقرب",
+    a(){
+      const r = rows.filter(x => x.cv !== Infinity).sort((a,b) => a.cv - b.cv)[0];
+      if (!r) return { t:"لسه مفيش استهلاك مسجّل", d:"سجّل عمليات صرف الأول عشان نقدر نتوقّع." };
+      const d = Math.floor(r.cv);
+      return { t:`${r.it.name} — ${fDateFull(addDays(t,d))}`,
+        d:`فاضل ${n1(r.b)} ${r.it.unit}، وبتصرف ${n1(r.a)} في اليوم.${r.it.lead?`\nمدة التوريد ${n0(r.it.lead)} يوم، يعني اطلب قبل ${fDate(addDays(t, Math.max(0,d-r.it.lead)))}.`:""}`,
+        go:()=>openItem(r.it.id) };
+    }});
+
+  /* ٣ — كام ورقة عندي */
+  Q.push({ q:"عندي كام ورقة في المخزن؟", ic:"box", tint:"var(--c-thermal)", key:"ورق ورقة كمية رصيد عندي كام",
+    a(){
+      const sheets = live.filter(i => SHEETY.includes(i.unit));
+      const tot = sheets.reduce((x,i) => x + Math.max(0,balance(i.id)), 0);
+      if (!tot) return { t:"مفيش ورق مسجّل", d:"ضيف أصناف الورق وسجّل الوارد." };
+      return { t:`${n0(tot)} ورقة`, d:sheets.filter(i => balance(i.id) > 0)
+        .sort((a,b) => balance(b.id)-balance(a.id))
+        .map(i => `• ${i.name}: ${n1(balance(i.id))}${isSheet(i)?` (${n1(balance(i.id)/i.pack)} علبة)`:""}`).join("\n"),
+        go:()=>go("stock") };
+    }});
+
+  /* ٤ — بصرف كام في اليوم */
+  Q.push({ q:"بصرف كام في اليوم؟", ic:"chart", tint:"var(--c-film)", key:"استهلاك بصرف متوسط يومي معدل",
+    a(){
+      const q30 = consumedBetween(null, m30, t), q7 = consumedBetween(null, m7, t);
+      if (!q30) return { t:"مفيش صرف في آخر شهر", d:"مفيش حركات منصرف مسجّلة." };
+      const diff = q7/7 - q30/30;
+      return { t:`${n1(q30/30)} في المتوسط`,
+        d:`آخر ٣٠ يوم: ${n1(q30)}\nآخر ٧ أيام: ${n1(q7)} (بمعدل ${n1(q7/7)} يومياً)\n${
+          Math.abs(diff) < 0.05*(q30/30 || 1) ? "المعدل ثابت تقريباً." :
+          diff > 0 ? `الاستهلاك زايد الأسبوع ده بحوالي ${n0((diff/(q30/30))*100)}٪.` :
+                     `الاستهلاك قلّ الأسبوع ده بحوالي ${n0((-diff/(q30/30))*100)}٪.`}`,
+        go:()=>go("reports") };
+    }});
+
+  /* ٥ — قيمة المخزون */
+  Q.push({ q:"قيمة المخزون كام؟", ic:"calc", tint:"var(--ok)", key:"قيمة فلوس مبلغ تكلفة المخزون",
+    a(){
+      const v = stockValue();
+      const byCat = Object.entries(CATS).map(([k,c]) => ({ n:c.ar,
+        v: live.filter(i => i.cat === k).reduce((x,i) => x + Math.max(0,balance(i.id))*(i.cost||0), 0) }))
+        .filter(x => x.v > 0).sort((a,b) => b.v - a.v);
+      return { t:money0(v), d:byCat.length ? byCat.map(x => `• ${x.n}: ${money0(x.v)}`).join("\n") : "ضيف أسعار للأصناف عشان نحسب القيمة." };
+    }});
+
+  /* ٦ — عليّ كام للموردين */
+  Q.push({ q:"عليّ كام للموردين؟", ic:"truck", tint:"var(--warn)", key:"مورد موردين مستحق فلوس دين اجل عليا",
+    a(){
+      const T = supTotals();
+      if (!T.total) return { t:"مفيش مشتريات مسجّلة", d:"سجّل فواتير الشراء من المخزون ← الموردين." };
+      const due = suppliers().map(p => ({ p, st:supStats(p.id) })).filter(x => x.st.due > 0).sort((a,b) => b.st.due - a.st.due);
+      return { t:T.due > 0 ? money0(T.due) : "مفيش مديونية 👌",
+        d:due.length ? due.map(x => `• ${x.p.name}: ${money0(x.st.due)}`).join("\n")
+          : `إجمالي المشتريات ${money0(T.total)} واتدفعت كلها.`,
+        go:()=>{ stockTab = "sup"; go("stock"); } };
+    }});
+
+  /* ٧ — المراكز */
+  Q.push({ q:"باقي إيه على المراكز؟", ic:"center", tint:"var(--c-plastic)", key:"مركز مراكز طلبية باقي تسليم عميل",
+    a(){
+      const cs = centers().map(p => ({ p, st:partyStats(p.id) })).filter(x => x.st.qty > 0);
+      if (!cs.length) return { t:"مفيش طلبيات مسجّلة", d:"سجّل طلبية من تاب طلبيات المراكز." };
+      const open = cs.filter(x => x.st.rem > 0).sort((a,b) => b.st.rem - a.st.rem);
+      if (!open.length) return { t:"كل الطلبيات اتسلّمت ✅", d:cs.map(x => `• ${x.p.name}: اتسلّم ${n1(x.st.del)} بالكامل`).join("\n") };
+      return { t:`${n0(open.length)} طلبية لسه مفتوحة`,
+        d:open.map(x => `• ${x.p.name}: باقي ${n1(x.st.rem)} من ${n1(x.st.qty)}`).join("\n"),
+        go:()=>go("centers") };
+    }});
+
+  /* ٨ — أكتر صنف بيتصرف */
+  Q.push({ q:"أكتر صنف بستهلكه إيه؟", ic:"up", tint:"var(--c-photo)", key:"اكتر اعلى صنف استهلاك بيتصرف",
+    a(){
+      const top = live.map(i => ({ i, q:consumedBetween(i.id, m30, t) })).filter(x => x.q > 0).sort((a,b) => b.q - a.q);
+      if (!top.length) return { t:"مفيش صرف في آخر شهر", d:"" };
+      const tot = top.reduce((x,y) => x + y.q, 0);
+      return { t:`${top[0].i.name} — ${n1(top[0].q)} ${top[0].i.unit}`,
+        d:top.slice(0,5).map(x => `• ${x.i.name}: ${n1(x.q)} (${n0((x.q/tot)*100)}٪)`).join("\n"),
+        go:()=>openItem(top[0].i.id) };
+    }});
+
+  /* ٩ — تكلفة اليوم */
+  Q.push({ q:"الصرف بيكلّفني كام في الشهر؟", ic:"wallet", tint:"var(--info)", key:"تكلفة كلفة شهر فلوس صرف",
+    a(){
+      let c = 0;
+      for (const i of live) c += consumedBetween(i.id, m30, t) * (i.cost || 0);
+      if (!c) return { t:"مفيش تكلفة محسوبة", d:"ضيف سعر الوحدة للأصناف عشان نحسب." };
+      return { t:money0(c), d:`ده تكلفة اللي اتصرف آخر ٣٠ يوم.\nبمتوسط ${money0(c/30)} في اليوم.` };
+    }});
+
+  /* ١٠ — فيه مشاكل؟ */
+  Q.push({ q:"فيه أي مشاكل في المخزن؟", ic:"warn", tint:"var(--bad)", key:"مشكلة مشاكل تنبيه خطر سالب",
+    a(){
+      const A = alerts();
+      if (!A.length) return { t:"كله تمام ✅", d:"مفيش أي تنبيهات دلوقتي." };
+      return { t:`${n0(A.length)} تنبيه`, d:A.slice(0,7).map(x => `• ${x.t}`).join("\n"), go:()=>openAlerts() };
+    }});
+
+  /* ١١ — آخر حركات */
+  Q.push({ q:"إيه آخر اللي حصل؟", ic:"clock", tint:"var(--ink2)", key:"اخر حركات نشاط حصل امبارح النهاردة",
+    a(){
+      const ms = S.moves.slice().sort((a,b) => (b.at||0)-(a.at||0)).slice(0,7);
+      if (!ms.length) return { t:"مفيش حركات لسه", d:"" };
+      return { t:`آخر ${n0(ms.length)} حركة`,
+        d:ms.map(m => { const it = item(m.itemId), ty = MOVES[m.type];
+          return `• ${ty.ar} ${n1(m.qty)} ${it?it.unit:""} ${it?it.name:""} — ${relDay(m.date)}${m.by&&byName(m.by)?` (${byName(m.by).split(" ")[0]})`:""}`;
+        }).join("\n"), go:()=>go("moves") };
+    }});
+
+  /* ١٢ — كام علبة */
+  Q.push({ q:"الرصيد ده كام علبة؟", ic:"box", tint:"var(--c-misc)", key:"علبة علب تحويل كام",
+    a(){
+      const sh = live.filter(i => isSheet(i) && balance(i.id) > 0);
+      if (!sh.length) return { t:"مفيش أصناف متسجّل ليها عدد أوراق في العلبة", d:"اكتب «عدد الأوراق في العلبة» في بيانات الصنف." };
+      return { t:"التحويل للعلب", d:sh.map(i => `• ${i.name}: ${n1(balance(i.id))} ورقة = ${n1(balance(i.id)/i.pack)} علبة`).join("\n") };
+    }});
+
+  return Q;
+}
+
+let askOpen = -1, askQ = "";
+function renderAsk(){
+  const Q = askAnswers();
+  const q = askQ.trim();
+  const norm = (v) => String(v||"").replace(/[أإآ]/g,"ا").replace(/[ىي]/g,"ي").replace(/ة/g,"ه").replace(/[ًٌٍَُِّْ]/g,"");
+  const nq = norm(q);
+  const list = q ? Q.filter(x => {
+    if (norm(x.q).includes(nq)) return true;
+    return norm(x.key||"").split(/\s+/).some(k => k && (k.includes(nq) || nq.includes(k)));
+  }) : Q;
+
+  const body = `
+  <div class="card" style="background:linear-gradient(150deg,var(--hero-1),var(--hero-2));border-color:transparent;color:#fff">
+    <div style="display:flex;align-items:center;gap:11px">
+      <div style="width:42px;height:42px;border-radius:14px;flex:none;display:grid;place-items:center;background:rgba(255,255,255,.16)">${svg("spark",21)}</div>
+      <div><div class="dsp" style="font-size:17px">المساعد</div>
+        <div style="font-size:12px;opacity:.82">اسأل عن مخزنك — الإجابة من بياناتك، من غير نت</div></div>
+    </div>
+  </div>
+  <div class="search">${svg("search")}<input id="askS" placeholder="دوّر على سؤال" value="${esc(askQ)}"></div>
+  ${list.length ? list.map((x,i) => {
+    const open = askOpen === i;
+    const r = open ? x.a() : null;
+    return `<div class="card" data-ask="${i}" style="${open?`border-inline-start:3px solid ${x.tint}`:""}">
+      <div style="display:flex;align-items:center;gap:11px">
+        <div class="ic" style="--tint:${x.tint};width:38px;height:38px;border-radius:13px;flex:none;display:grid;place-items:center;background:color-mix(in srgb,${x.tint} 14%,transparent);color:${x.tint}">${svg(x.ic,18)}</div>
+        <div style="flex:1;min-width:0;font-size:13.5px;font-weight:600">${x.q}</div>
+        <div class="mut2" style="transition:transform .3s var(--spring);transform:rotate(${open?"-90deg":"0"})">${svg("back",16)}</div>
+      </div>
+      ${open && r ? `<div class="ans">
+        <div class="ans-t" style="color:${x.tint}">${esc(r.t)}</div>
+        ${r.d?`<div class="ans-d">${esc(r.d).replace(/\n/g,"<br>")}</div>`:""}
+        ${r.go?`<button class="btn soft sm" style="margin-top:11px" data-go="${i}">${svg("back",13)} افتح التفاصيل</button>`:""}
+      </div>` : ""}
+    </div>`;
+  }).join("") : `<div class="empty"><div class="ic">${svg("search",26)}</div><h4>مفيش سؤال بالكلمة دي</h4><p>جرّب كلمة تانية زي «طلب» أو «مورد» أو «ورق».</p></div>`}
+  <div style="height:10px"></div>`;
+
+  sheet("المساعد", body, () => {
+    const si = $("#askS");
+    si.oninput = () => { askQ = si.value; askOpen = -1; const c = si.selectionStart; renderAsk(); const n2 = $("#askS"); n2.focus(); n2.setSelectionRange(c,c); };
+    $$("#sheetBody [data-ask]").forEach(el => el.onclick = e => {
+      if (e.target.closest("[data-go]")) return;
+      const i = +el.dataset.ask;
+      askOpen = askOpen === i ? -1 : i;
+      buzz(8); renderAsk();
+    });
+    $$("#sheetBody [data-go]").forEach(b => b.onclick = e => {
+      e.stopPropagation();
+      const r = list[+b.dataset.go].a();
+      closeSheet(); setTimeout(() => r.go && r.go(), 240);
+    });
+  });
 }
 
 /* =========================================================
@@ -3738,6 +4098,29 @@ async function openSync(){
    ========================================================= */
 $("#scrim").onclick = closeSheet;
 $("#sheetX").onclick = closeSheet;
+/* سحب الشيت لتحت يقفله */
+(function sheetDrag(){
+  const sh = $("#sheet"), grip = $(".sheet-grip"), head = $(".sheet-h");
+  let y0 = 0, on = false, dy = 0;
+  const start = e => { on = true; y0 = e.clientY; dy = 0; sh.style.transition = "none"; };
+  const move = e => {
+    if (!on) return;
+    dy = Math.max(0, e.clientY - y0);
+    sh.style.transform = `translateY(${dy}px)`;
+  };
+  const end = () => {
+    if (!on) return;
+    on = false; sh.style.transition = "";
+    if (dy > 90) closeSheet(); else sh.style.transform = "";
+  };
+  [grip, head].forEach(el => {
+    if (!el) return;
+    el.addEventListener("pointerdown", e => { if (e.target.closest(".sheet-x")) return; start(e); });
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", end);
+    el.addEventListener("pointercancel", end);
+  });
+})();
 $("#fab").onclick = () => { buzz(); if (SCR === "centers") openDealForm(); else openMoveForm(SCR === "stock" ? "out" : "in"); };
 $("#btnAlerts").onclick = () => { buzz(); openAlerts(); };
 $("#btnNet").onclick = () => { buzz(); openNet(); };
@@ -3747,7 +4130,38 @@ $("#btnTheme").onclick = () => {
 };
 $$("#nav button").forEach(b => b.onclick = () => { buzz(6); go(b.dataset.scr); });
 addEventListener("scroll", () => $("#topbar").classList.toggle("stuck", scrollY > 6), { passive:true });
-addEventListener("keydown", e => { if (e.key === "Escape") closeSheet(); });
+addEventListener("keydown", e => {
+  if (e.key === "Escape") closeSheet();
+  if (e.key === "ArrowLeft" && !$("#sheet").classList.contains("on")) goBack();
+});
+
+/* سحب من حافة الشمال يرجّع للصفحة اللي قبلها */
+(function edgeSwipe(){
+  const edge = $("#edge"), hint = $("#edgeHint");
+  if (!edge) return;
+  let x0 = 0, y0 = 0, on = false;
+  const show = (p) => { hint.style.opacity = Math.min(1, p).toFixed(2);
+    hint.style.transform = `translate(${(-100 + Math.min(100, p*100))}%,-50%)`; };
+  const reset = () => { on = false; hint.style.opacity = "0"; hint.style.transform = "translate(-100%,-50%)"; };
+  edge.addEventListener("pointerdown", e => {
+    on = true; x0 = e.clientX; y0 = e.clientY;
+    try{ edge.setPointerCapture(e.pointerId); }catch(err){}
+  });
+  edge.addEventListener("pointermove", e => {
+    if (!on) return;
+    const dx = e.clientX - x0, dy = Math.abs(e.clientY - y0);
+    if (dy > 60) return reset();
+    if (dx > 0) show(dx / 90);
+  });
+  const end = e => {
+    if (!on) return;
+    const dx = (e.clientX || 0) - x0;
+    reset();
+    if (dx > 70){ buzz(10); goBack(); }
+  };
+  edge.addEventListener("pointerup", end);
+  edge.addEventListener("pointercancel", reset);
+})();
 
 (async function init(){
   await load();
