@@ -341,6 +341,35 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
 .att .meta span{font-size:11px;color:var(--ink3)}
 .att .rm{width:32px;height:32px;border-radius:11px;flex:none;display:grid;place-items:center;background:var(--bad-soft);color:var(--bad);transition:transform .3s var(--spring)}
 .att .rm:active{transform:scale(.85)}
+/* لوجو المركز */
+.logo{border-radius:14px;flex:none;display:grid;place-items:center;overflow:hidden;
+  background:var(--surf2);border:1px solid var(--line);font-family:"Zain";font-weight:900;color:#fff}
+.logo img{width:100%;height:100%;object-fit:cover;display:block}
+.logo-pick{width:82px;height:82px;border-radius:22px;margin:0 auto 6px;display:grid;place-items:center;
+  overflow:hidden;background:var(--surf2);border:1.5px dashed var(--line);color:var(--ink3);
+  transition:transform .3s var(--spring),border-color .2s}
+.logo-pick:active{transform:scale(.94)}
+.logo-pick.has{border-style:solid;border-color:transparent}
+.logo-pick img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* إشارة المرور — اتسلّم / باقي / الإجمالي */
+.tl{display:flex;gap:7px;margin-top:11px}
+.tl > div{flex:1;border-radius:14px;padding:8px 6px 7px;text-align:center;position:relative;overflow:hidden;
+  border:1px solid transparent;background:var(--surf2)}
+.tl .n{font-family:"Zain";font-weight:900;font-size:18px;line-height:1.15;font-variant-numeric:tabular-nums}
+.tl .w{font-size:10.5px;font-weight:600;margin-top:1px;opacity:.9}
+.tl .lamp{position:absolute;top:6px;inset-inline-start:6px;width:7px;height:7px;border-radius:50%;opacity:.9}
+.tl .g{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok);border-color:color-mix(in srgb,var(--ok) 30%,transparent)}
+.tl .g .lamp{background:var(--ok)}
+.tl .a{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn);border-color:color-mix(in srgb,var(--warn) 32%,transparent)}
+.tl .a .lamp{background:var(--warn)}
+.tl .r{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad);border-color:color-mix(in srgb,var(--bad) 32%,transparent)}
+.tl .r .lamp{background:var(--bad)}
+.tl .n0{background:var(--surf2);color:var(--ink2);border-color:var(--line)}
+.tl .n0 .lamp{background:var(--ink3)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.28}}
+.tl .blink .lamp{animation:blink 1.15s ease-in-out infinite}
+.tl .blink .n{animation:blink 1.15s ease-in-out infinite}
 .rm-btn{width:32px;height:32px;border-radius:11px;flex:none;display:grid;place-items:center;background:var(--bad-soft);color:var(--bad);margin-inline-start:6px;transition:transform .3s var(--spring)}
 .rm-btn:active{transform:scale(.85)}
 .att-view{width:100%;border-radius:14px;display:block;margin-top:10px;border:1px solid var(--line)}
@@ -1130,7 +1159,7 @@ function renderHome(){
     ${cs.map((x,k) => {
       const tint = PAL[k%PAL.length], pct = x.st.qty ? (x.st.rem/x.st.qty)*100 : 0;
       return `<div style="margin-bottom:14px" data-center="${x.p.id}">
-        <div class="hb-top"><span class="l">${esc(x.p.name)}</span>
+        <div class="hb-top"><span class="l" style="display:flex;align-items:center;gap:7px">${partyLogo(x.p, 22, tint)}<span style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${esc(x.p.name)}</span></span>
           <span class="num" style="color:${x.st.rem>0?tint:"var(--ok)"}">${x.st.rem>0?n1(x.st.rem):"تم ✅"}</span></div>
         ${depBar(x.st.rem, x.st.qty, tint)}
         <div class="mut2" style="font-size:11px;margin-top:5px">اتسلّم ${n1(x.st.del)} من ${n1(x.st.qty)} · باقي ${n0(pct)}٪</div>
@@ -1276,9 +1305,10 @@ function renderCenters(){
       const st = x.st, tint = PAL[k % PAL.length];
       const pct = st.qty ? (st.rem/st.qty)*100 : 0;
       const done = st.qty > 0 && st.rem <= 0;
+      const un = item(st.ds[0] && st.ds[0].itemId)?.unit || "";
       return `<div class="card" data-cen="${x.p.id}" style="border-inline-start:3px solid ${done?"var(--ok)":tint}">
         <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
-          <div style="width:42px;height:42px;border-radius:14px;flex:none;display:grid;place-items:center;background:color-mix(in srgb,${tint} 14%,transparent);color:${tint}">${svg("center")}</div>
+          ${partyLogo(x.p, 44, tint)}
           <div style="flex:1;min-width:0">
             <div style="font-size:14.5px;font-weight:600">${esc(x.p.name)}</div>
             <div class="mut2" style="font-size:11.5px">${x.p.phone?esc(x.p.phone)+" · ":""}${st.ds.length?`${n0(st.ds.length)} طلبية`:"مفيش طلبيات"}</div>
@@ -1286,9 +1316,7 @@ function renderCenters(){
           ${done?`<span class="chip ok tickin">${svg("check",12)} اكتملت</span>`:st.qty?`<span class="chip" style="background:color-mix(in srgb,${tint} 15%,transparent);color:${tint};border-color:transparent">${n0(pct)}٪ باقي</span>`:""}
         </div>
         ${st.qty ? `${depBar(st.rem, st.qty, tint)}
-        <div style="display:flex;justify-content:space-between;margin-top:7px;font-size:11.5px" class="mut2">
-          <span>اتسلّم ${n1(st.del)}</span><span>باقي ${n1(st.rem)}</span><span>الإجمالي ${n1(st.qty)}</span>
-        </div>
+        ${trafficLights(st.del, st.rem, st.qty, un)}
         <div style="display:flex;gap:8px;margin-top:12px">
           <button class="btn soft sm" style="flex:1" data-deliver="${x.p.id}">${svg("truck",14)} سلّم كمية</button>
           <button class="btn ghost sm" style="flex:1" data-newdeal="${x.p.id}">${svg("plus",14)} طلبية</button>
@@ -1306,6 +1334,24 @@ function renderCenters(){
   $$("#s-centers [data-newdeal]").forEach(b => b.onclick = e => { e.stopPropagation(); openDealForm(b.dataset.newdeal); });
 }
 
+/* إشارة المرور: اتسلّم أخضر · باقي أصفر ويحمرّ ويومض لما يكون لسه كتير · الإجمالي محايد */
+function trafficLights(del, rem, tot, unit){
+  const pct = tot > 0 ? rem / tot : 0;
+  const remCls = rem <= 0 ? "g" : pct > 0.6 ? "r blink" : "a";
+  return `<div class="tl">
+    <div class="g"><span class="lamp"></span><div class="n">${n1(del)}</div><div class="w">اتسلّم</div></div>
+    <div class="${remCls}"><span class="lamp"></span><div class="n">${rem<=0?"تم":n1(rem)}</div><div class="w">${rem<=0?"مفيش باقي":"باقي"}</div></div>
+    <div class="n0"><span class="lamp"></span><div class="n">${n1(tot)}</div><div class="w">الإجمالي${unit?` · ${esc(unit)}`:""}</div></div>
+  </div>`;
+}
+/* لوجو المركز أو أول حرف من اسمه */
+function partyLogo(p, size, tint){
+  const sz = size || 42;
+  const r = Math.round(sz / 3);
+  if (p && p.logo) return `<div class="logo" style="width:${sz}px;height:${sz}px;border-radius:${r}px"><img src="${p.logo}" alt=""></div>`;
+  const letter = p && p.name ? p.name.trim().replace(/^(مركز|مؤسسة|شركة|معمل)\s+/, "").trim()[0] || p.name.trim()[0] : "؟";
+  return `<div class="logo" style="width:${sz}px;height:${sz}px;border-radius:${r}px;background:${tint||"var(--pri)"};border-color:transparent;font-size:${Math.round(sz/2.3)}px">${esc(letter)}</div>`;
+}
 function openCenter(pid){
   const p = party(pid); if (!p) return;
   const st = partyStats(pid);
@@ -1314,11 +1360,13 @@ function openCenter(pid){
 
   const h = `
   <div style="display:flex;gap:11px;align-items:center;margin-bottom:14px">
-    <div style="width:46px;height:46px;border-radius:15px;flex:none;display:grid;place-items:center;background:var(--pri-soft);color:var(--pri)">${svg("center",22)}</div>
+    ${partyLogo(p, 52, "var(--pri)")}
     <div style="flex:1;min-width:0"><div style="font-size:16px;font-weight:700">${esc(p.name)}</div>
       <div class="mut2" style="font-size:12px">${[p.phone,p.note].filter(Boolean).map(esc).join(" · ")||"مركز"}</div></div>
     <button class="icon-btn" onclick="openPartyForm('${pid}')">${svg("edit",17)}</button>
   </div>
+
+  ${st.qty ? `<div class="card" style="padding:13px 14px">${trafficLights(st.del, st.rem, st.qty, item(st.ds[0] && st.ds[0].itemId)?.unit || "")}</div>` : ""}
 
   <div class="stat-grid">
     ${stat("wallet","المدفوع",money(st.paid),`قيمة ${money(st.value)}`,"var(--ok)","")}
@@ -1336,9 +1384,7 @@ function openCenter(pid){
         ${done?`<span class="chip ok tickin">تمت</span>`:""}
       </div>
       ${depBar(rem, d.qty, tint)}
-      <div style="display:flex;justify-content:space-between;margin-top:7px;font-size:11.5px" class="mut2">
-        <span>اتسلّم ${n1(del)}</span><span class="num" style="color:${done?"var(--ok)":tint};font-size:13px">باقي ${n1(rem)} ${esc(it?it.unit:"")}</span><span>${n1(d.qty)}</span>
-      </div>
+      ${trafficLights(del, rem, d.qty, it?it.unit:"")}
       ${d.note?`<div class="mut2" style="font-size:11.5px;margin-top:7px">${esc(d.note)}</div>`:""}
       <div style="display:flex;gap:8px;margin-top:12px">
         ${done?"":`<button class="btn soft sm" style="flex:1" data-dl="${d.id}">${svg("truck",14)} سلّم من الطلبية دي</button>`}
@@ -1772,7 +1818,7 @@ function renderReports(){
     ${cenRows.map((x,k) => {
       const tint = PAL2[k%PAL2.length], done = x.st.rem <= 0;
       return `<div style="margin-bottom:14px" data-cenr="${x.p.id}">
-        <div class="hb-top"><span class="l">${esc(x.p.name)}</span>
+        <div class="hb-top"><span class="l" style="display:flex;align-items:center;gap:7px">${partyLogo(x.p, 22, tint)}<span style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${esc(x.p.name)}</span></span>
           <span class="num" style="color:${done?"var(--ok)":tint}">${done?"اكتملت ✅":n1(x.st.rem)+" باقي"}</span></div>
         ${depBar(x.st.rem, x.st.qty, tint)}
         <div class="mut2" style="font-size:11px;margin-top:5px">اتسلّم ${n1(x.st.del)} من ${n1(x.st.qty)} · محصّل ${money(x.st.paid)}</div>
@@ -2099,6 +2145,32 @@ function readAttachment(file){
           const best = out.length < raw.length ? out : raw;
           res({ name:file.name, type: best === out ? "image/jpeg" : file.type, data:best, size:best.length });
         }catch(e){ res({ name:file.name, type:file.type, data:raw, size:raw.length }); }
+      };
+      img.src = raw;
+    };
+    r.readAsDataURL(file);
+  });
+}
+/* اللوجو بيتصغّر لمربع ٢٥٦ عشان ميكبّرش حجم البيانات */
+function readLogo(file){
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onerror = () => rej(new Error("read"));
+    r.onload = () => {
+      const raw = r.result;
+      const img = new Image();
+      img.onerror = () => res(raw);
+      img.onload = () => {
+        try{
+          const D = 256, c = document.createElement("canvas");
+          c.width = D; c.height = D;
+          const ctx = c.getContext("2d");
+          if (!ctx) return res(raw);
+          const side = Math.min(img.width, img.height);
+          ctx.drawImage(img, (img.width-side)/2, (img.height-side)/2, side, side, 0, 0, D, D);
+          const out = c.toDataURL("image/jpeg", 0.8);
+          res(out.length < raw.length ? out : raw);
+        }catch(e){ res(raw); }
       };
       img.src = raw;
     };
@@ -2560,7 +2632,7 @@ function openParties(){
   ${S.parties.length ? `<div class="card"><div class="rows">${S.parties.map(p => {
     const outQ = S.moves.filter(m => m.partyId === p.id && (m.type==="out")).reduce((a,m)=>a+m.qty,0);
     return `<div class="row" data-p="${p.id}">
-      <div class="ic" style="--tint:${p.kind==="sup"?"var(--ok)":"var(--c-film)"}">${svg(p.kind==="sup"?"truck":"people")}</div>
+      ${p.kind==="sup"?`<div class="ic" style="--tint:var(--ok)">${svg("truck")}</div>`:partyLogo(p, 40, "var(--c-film)")}
       <div class="mid"><div class="t">${esc(p.name)}</div><div class="d">${p.kind==="sup"?"مورد":"عميل / مركز"}${p.phone?" · "+esc(p.phone):""}</div></div>
       <div class="end"><div class="v num" style="font-size:14px">${n1(outQ)}</div><div class="u">منصرف</div></div>
     </div>`;
@@ -2579,7 +2651,14 @@ function openPartyForm(id, after){
   if (!need("edit")) return;
   const p = id ? party(id) : null;
   let kind = p ? p.kind : "cli";
-  const h = `<div class="field"><label>الاسم</label><input id="pName" value="${esc(p?p.name:"")}" placeholder="مركز النور للأشعة"></div>
+  let logo = p ? (p.logo || "") : "";
+  const h = `<div class="field" id="pLogoWrap" style="text-align:center">
+    <button class="logo-pick ${logo?"has":""}" id="pLogo">${logo?`<img src="${logo}" alt="">`:svg("camera",26)}</button>
+    <div class="hint" style="text-align:center">
+      <span id="pLogoBtn" style="color:var(--pri);font-weight:700">${logo?"غيّر اللوجو":"ضيف لوجو المركز"}</span>
+      ${logo?` · <span id="pLogoRm" style="color:var(--bad);font-weight:700">شيله</span>`:""}
+    </div></div>
+  <div class="field"><label>الاسم</label><input id="pName" value="${esc(p?p.name:"")}" placeholder="مركز النور للأشعة"></div>
   <div class="field"><label>النوع</label><div class="picks" id="pKind">
     <button class="pick ${kind==="cli"?"on":""}" data-k="cli">عميل / مركز</button>
     <button class="pick ${kind==="sup"?"on":""}" data-k="sup">مورد</button></div></div>
@@ -2600,6 +2679,33 @@ function openPartyForm(id, after){
   ${p ? `<button class="btn danger wide sm" style="margin-top:9px" id="pDel">${svg("trash",14)} احذف</button>` : ""}
   <div style="height:10px"></div>`;
   sheet(p ? "تعديل جهة" : "جهة جديدة", h, () => {
+    const paintLogo = () => {
+      const el = $("#pLogo");
+      el.classList.toggle("has", !!logo);
+      el.innerHTML = logo ? `<img src="${logo}" alt="">` : svg("camera",26);
+      $("#pLogoBtn").textContent = logo ? "غيّر اللوجو" : "ضيف لوجو المركز";
+      const rm = $("#pLogoRm");
+      if (logo && !rm){
+        $("#pLogoBtn").insertAdjacentHTML("afterend", ` · <span id="pLogoRm" style="color:var(--bad);font-weight:700">شيله</span>`);
+        $("#pLogoRm").onclick = () => { logo = ""; buzz(); paintLogo(); };
+      } else if (!logo && rm){ rm.previousSibling.remove?.(); rm.remove(); }
+    };
+    const pickLogo = () => {
+      const inp = document.createElement("input");
+      inp.type = "file"; inp.accept = "image/*";
+      inp.onchange = async () => {
+        const f = inp.files && inp.files[0]; if (!f) return;
+        toast("بيجهّز اللوجو…");
+        try{
+          const a = await readLogo(f);
+          logo = a; buzz(14); paintLogo(); toast("اللوجو اتحط");
+        }catch(e){ toast("مقدرش يقرا الصورة"); }
+      };
+      inp.click();
+    };
+    $("#pLogo").onclick = pickLogo;
+    $("#pLogoBtn").onclick = pickLogo;
+    if ($("#pLogoRm")) $("#pLogoRm").onclick = () => { logo = ""; buzz(); paintLogo(); };
     const prof = () => {
       const c = +$("#pCost").value || 0, se = +$("#pSell").value || 0, d = se - c;
       const el = $("#pProfit");
@@ -2611,12 +2717,13 @@ function openPartyForm(id, after){
     $("#pCost").oninput = prof; $("#pSell").oninput = prof; prof();
     $$("#pKind .pick").forEach(b => b.onclick = () => {
       kind = b.dataset.k; $$("#pKind .pick").forEach(x => x.classList.toggle("on", x===b));
-      $("#pPrices").classList.toggle("hide", kind === "sup"); buzz(6);
+      $("#pPrices").classList.toggle("hide", kind === "sup");
+      $("#pLogoWrap").classList.toggle("hide", kind === "sup"); buzz(6);
     });
     $("#pSave").onclick = () => {
       const name = $("#pName").value.trim(); if (!name) return toast("اكتب الاسم");
       const o = { name, kind, phone:$("#pPhone").value.trim(), note:$("#pNote").value.trim(),
-                  cost:+$("#pCost").value || 0, sell:+$("#pSell").value || 0 };
+                  cost:+$("#pCost").value || 0, sell:+$("#pSell").value || 0, logo };
       if (p) Object.assign(p, o); else { o.id = uid(); S.parties.push(o); }
       persist(); closeSheet(); render(); toast("اتحفظ");
       if (after) setTimeout(after, 260);
