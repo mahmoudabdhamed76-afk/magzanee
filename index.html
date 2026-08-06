@@ -1495,34 +1495,53 @@ function openCenter(pid){
     ${stat("target","باقي تسليمه",n1(st.rem),`من ${n1(st.qty)}`,"var(--acc)","")}
   </div>
 
-  ${st.ds.length ? st.ds.slice().sort((a,b) => dealRemaining(b)-dealRemaining(a)).map((d,k) => {
-    const it = item(d.itemId), rem = dealRemaining(d), del = dealDelivered(d.id), tint = it?tintOf(it):PAL[k%PAL.length];
-    const done = rem <= 0;
-    return `<div class="card" style="border-inline-start:3px solid ${done?"var(--ok)":tint}">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-        <div style="width:36px;height:36px;border-radius:12px;flex:none;display:grid;place-items:center;background:color-mix(in srgb,${tint} 14%,transparent);color:${tint}">${svg(it?icOf(it):"box",17)}</div>
-        <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:600">${esc(it?it.name:"صنف محذوف")}</div>
-          <div class="mut2" style="font-size:11px">${fDate(d.date)} · ${money(d.price||0)}/${esc(it?it.unit:"")} · إجمالي ${money(d.qty*(d.price||0))}</div></div>
-        ${done?`<span class="chip ok tickin">اتسلّمت</span>`:""}
-      </div>
-      ${depBar(rem, d.qty, tint)}
-      ${trafficLights(del, rem, d.qty, it?it.unit:"")}
-      ${dealValue(d) ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px;
+  ${groupsOf(pid).length ? groupsOf(pid)
+    .sort((a,b) => groupDue(b.ds) - groupDue(a.ds) || (b.ds[0].date < a.ds[0].date ? -1 : 1))
+    .map((G,k) => {
+      const ds = G.ds, g0 = ds[0];
+      const val = groupValue(ds), due = groupDue(ds), done = groupDone(ds);
+      const payL = { cash:"مدفوعة كاش", credit:"آجل", part:"دفعة مقدّمة" }[g0.pay || (due<=0?"cash":"credit")] || "";
+      const tint = PAL[k % PAL.length];
+      return `<div class="card" style="border-inline-start:3px solid ${done&&due<=0?"var(--ok)":tint}">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:11px">
+          <div style="width:36px;height:36px;border-radius:12px;flex:none;display:grid;place-items:center;background:color-mix(in srgb,${tint} 14%,transparent);color:${tint}">${svg("file",17)}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13.5px;font-weight:600">طلبية ${fDate(g0.date)}${ds.length>1?` · ${n0(ds.length)} أصناف`:""}</div>
+            <div class="mut2" style="font-size:11px">${payL}${g0.note?" · "+esc(g0.note):""}</div></div>
+          <div style="text-align:end;flex:none">
+            <div class="num" style="font-size:16px">${money(val)}</div>
+            <div class="mut2" style="font-size:10px">${done?"اتسلّمت":"جاري التسليم"}</div></div>
+        </div>
+
+        ${ds.map(d => {
+          const it = item(d.itemId), rem = dealRemaining(d), del = dealDelivered(d.id), dn = rem <= 0;
+          const lt = it ? tintOf(it) : tint;
+          return `<div style="padding:11px 0;border-top:1px solid var(--line2)">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px">
+              <div style="width:28px;height:28px;border-radius:10px;flex:none;display:grid;place-items:center;background:color-mix(in srgb,${lt} 14%,transparent);color:${lt}">${svg(it?icOf(it):"box",14)}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600">${esc(it?it.name:"صنف محذوف")}</div>
+                <div class="mut2" style="font-size:11px">${n1(d.qty)} ${esc(it?it.unit:"")} × ${money(d.price||0)} = ${money(dealValue(d))}</div></div>
+              ${dn?`<span class="chip ok tickin">اتسلّم</span>`:""}
+            </div>
+            ${depBar(rem, d.qty, lt)}
+            ${trafficLights(del, rem, d.qty, it?it.unit:"")}
+            ${!dn ? `<button class="btn soft sm wide" style="margin-top:9px" data-dl="${d.id}">${svg("truck",13)} سلّم من الصنف ده</button>` : ""}
+          </div>`;
+        }).join("")}
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px;
           padding-top:11px;border-top:1px solid var(--line2)">
-        <div><div class="mut2" style="font-size:11px">${n1(d.qty)} × ${money(d.price||0)}</div>
-          <div class="num" style="font-size:16px;color:${dealDue(d)>0?"var(--bad)":"var(--ok)"}">${money(dealValue(d))}</div></div>
-        ${payChip(d)}
-      </div>
-      ${dealDue(d) > 0 ? `<button class="btn ${done?"":"ghost"} wide sm" style="margin-top:10px${done?`;background:var(--ok);color:${onTint()}`:""}" data-collect="${d.id}">
-        ${svg("wallet",14)} ${done?`تم التحصيل — ${money(dealDue(d))}`:`حصّل ${money(dealDue(d))}`}
-      </button>` : ""}` : ""}
-      ${d.note?`<div class="mut2" style="font-size:11.5px;margin-top:7px">${esc(d.note)}</div>`:""}
-      <div style="display:flex;gap:8px;margin-top:12px">
-        ${done?"":`<button class="btn soft sm" style="flex:1" data-dl="${d.id}">${svg("truck",14)} سلّم من الطلبية دي</button>`}
-        <button class="btn ghost sm" data-dedit="${d.id}">${svg("edit",14)}</button>
-      </div>
-    </div>`;
-  }).join("") : `<div class="empty"><div class="ic">${svg("wallet",26)}</div><h4>مفيش طلبيات</h4><p>سجّل الكمية اللي اشتراها المركز ودفع حقها.</p></div>`}
+          <div><div class="mut2" style="font-size:11px">${due>0?"المستحق":"اتحصّل بالكامل"}</div>
+            <div class="num" style="font-size:17px;color:${due>0?"var(--bad)":"var(--ok)"}">${money(due>0?due:val)}</div></div>
+          ${due<=0?`<span class="chip ok tickin">${svg("check",12)} تم التحصيل</span>`
+            : `<span class="chip bad">${svg("wallet",12)} ${ds.some(d=>dealPaid(d)>0)?"محصّل جزئي":"لم يُحصّل"}</span>`}
+        </div>
+        ${due > 0 ? `<button class="btn ${done?"":"ghost"} wide sm" style="margin-top:10px${done?`;background:var(--ok);color:${onTint()}`:""}" data-collectg="${G.g}">
+          ${svg("wallet",14)} ${done?`تم التحصيل — ${money(due)}`:`حصّل ${money(due)}`}</button>` : ""}
+        <button class="btn ghost wide sm" style="margin-top:8px" data-dedit="${g0.id}">${svg("edit",13)} تعديل الطلبية</button>
+      </div>`;
+    }).join("") : `<div class="empty"><div class="ic">${svg("wallet",26)}</div><h4>مفيش طلبيات</h4><p>سجّل الكمية اللي المركز طلبها — ممكن تحط أكتر من صنف في نفس الطلبية.</p></div>`}
 
   <button class="btn wide" onclick="closeSheet();openDealForm('${pid}')" style="margin-bottom:14px">${svg("plus",16)} طلبية جديدة</button>
 
@@ -1543,6 +1562,7 @@ function openCenter(pid){
 
   sheet(p.name, h, () => {
     $$("#sheetBody [data-collect]").forEach(b => b.onclick = () => openCollect(b.dataset.collect));
+    $$("#sheetBody [data-collectg]").forEach(b => b.onclick = () => openCollectGroup(b.dataset.collectg));
     $$("#sheetBody [data-col]").forEach(el => el.onclick = () => delCollection(el.dataset.col, pid));
     const ca = $("#sheetBody [data-collect-all]");
     if (ca) ca.onclick = () => openCollectAll(pid);
@@ -1631,6 +1651,59 @@ function addCollection(d, amt, method, date, note){
 }
 
 /* ---- تحصيل كل الطلبيات المكتملة مرة واحدة ---- */
+/* تحصيل كل أصناف طلبية واحدة */
+function openCollectGroup(g){
+  if (!need("edit")) return;
+  const ds = groupDeals(g).filter(d => dealDue(d) > 0);
+  if (!ds.length) return toast("الطلبية دي اتحصّلت");
+  const pid = ds[0].partyId, due = ds.reduce((a,d) => a + dealDue(d), 0);
+  let method = PAY_METHODS[0];
+  const h = `
+  <div class="card tight" style="background:var(--ok-soft);border-color:transparent">
+    <div style="font-size:12.5px;line-height:1.6">طلبية <b>${esc(party(pid)?.name||"")}</b> بتاريخ ${fDate(ds[0].date)} — المستحق <b>${money(due)}</b></div></div>
+  <div class="card"><div class="rows">${ds.map(d => {
+    const it = item(d.itemId);
+    return `<div class="row" style="padding:9px 0">
+      <div class="ic" style="--tint:${it?tintOf(it):"var(--pri)"}">${svg(it?icOf(it):"box")}</div>
+      <div class="mid"><div class="t">${esc(it?it.name:"صنف")}</div>
+        <div class="d">${n1(d.qty)} × ${money(d.price||0)}</div></div>
+      <div class="end"><div class="v num" style="font-size:15px;color:var(--bad)">${money(dealDue(d))}</div></div>
+    </div>`;
+  }).join("")}</div></div>
+  <div class="field"><label>المبلغ المحصّل</label>
+    <input id="cgAmt" type="number" inputmode="decimal" value="${Math.round(due*100)/100}">
+    <div class="hint"><span id="cgAll" style="color:var(--pri);font-weight:700">حصّل المستحق كامل (${money(due)})</span></div></div>
+  <div class="field"><label>طريقة التحصيل</label><div class="picks" id="cgM">
+    ${PAY_METHODS.map(m => `<button class="pick ${method===m?"on":""}" data-m="${esc(m)}">${m}</button>`).join("")}</div></div>
+  <div class="field"><label>التاريخ</label><input id="cgDate" type="date" value="${todayISO()}"></div>
+  <div class="field"><label>ملاحظة</label><input id="cgNote" placeholder="رقم الإيصال"></div>
+  <button class="btn wide" id="cgSave" style="background:var(--ok);color:${onTint()}">${svg("check",16)} تم التحصيل</button>
+  <div style="height:10px"></div>`;
+  sheet("تحصيل الطلبية", h, () => {
+    $$("#cgM .pick").forEach(b => b.onclick = () => { method = b.dataset.m; $$("#cgM .pick").forEach(x => x.classList.toggle("on", x===b)); buzz(6); });
+    $("#cgAll").onclick = () => { $("#cgAmt").value = Math.round(due*100)/100; buzz(6); };
+    $("#cgSave").onclick = () => {
+      let amt = +$("#cgAmt").value || 0;
+      if (amt <= 0) return toast("اكتب مبلغ أكبر من صفر");
+      if (amt > due + 0.5) return toast(`المستحق ${money(due)} بس`);
+      const date = $("#cgDate").value || todayISO(), note = $("#cgNote").value.trim();
+      /* المبلغ بيتوزّع على أصناف الطلبية بالترتيب */
+      for (const d of ds){
+        if (amt <= 0) break;
+        const part = Math.min(dealDue(d), amt);
+        if (part <= 0) continue;
+        if (!S.cols) S.cols = [];
+        S.cols.push({ id:uid(), dealId:d.id, partyId:pid, amount:part, method, date, note,
+                      by:(typeof ME !== "undefined" && ME) ? ME.id : "", at:now() });
+        amt -= part;
+      }
+      persist(); buzz(22); closeSheet(); render();
+      const left = groupDue(groupDeals(g));
+      toast(left <= 0 ? "تم تحصيل الطلبية بالكامل 🎉" : `اتحصّل — باقي ${money(left)}`);
+      setTimeout(() => openCenter(pid), 260);
+    };
+  });
+}
 function openCollectAll(pid){
   if (!need("edit")) return;
   const st = partyStats(pid), p = party(pid);
@@ -1672,65 +1745,231 @@ function openCollectAll(pid){
   });
 }
 
-/* ---- نموذج الطلبية ---- */
+/* ---- نموذج الطلبية — أكتر من صنف في طلبية واحدة، مدفوعة أو آجل ---- */
+let dfLines = [], dfPay = "cash", dfParty = "", dfGrp = "";
+
+function dealGroup(d){ return d.grp || d.id; }
+function groupDeals(g){ return S.deals.filter(x => dealGroup(x) === g); }
+function groupsOf(pid){
+  const seen = [], out = [];
+  for (const d of partyDeals(pid)){
+    const g = dealGroup(d);
+    if (seen.includes(g)) continue;
+    seen.push(g);
+    out.push({ g, ds:groupDeals(g) });
+  }
+  return out;
+}
+const groupValue = (ds) => ds.reduce((a,d) => a + dealValue(d), 0);
+const groupDue   = (ds) => ds.reduce((a,d) => a + dealDue(d), 0);
+const groupDone  = (ds) => ds.every(d => dealDone(d));
+
 function openDealForm(pid, dealId){
   if (!need("edit")) return;
-  const d = dealId ? S.deals.find(x => x.id === dealId) : null;
   const cs = centers();
   if (!cs.length){ toast("ضيف مركز الأول"); return openPartyForm(); }
-  if (!S.items.filter(i => !i.archived).length){ toast("ضيف صنف الأول"); return openItemForm(); }
-  const selP = d ? d.partyId : (pid || cs[0].id);
-  const selI = d ? d.itemId : S.items.filter(i => !i.archived)[0].id;
+  const live = S.items.filter(i => !i.archived);
+  if (!live.length){ toast("ضيف صنف الأول"); return openItemForm(); }
+
+  const ed = dealId ? S.deals.find(x => x.id === dealId) : null;
+  if (ed){
+    dfGrp = dealGroup(ed);
+    const ds = groupDeals(dfGrp);
+    dfParty = ed.partyId;
+    dfPay = ed.pay || (dealPaid(ed) >= dealValue(ed) && dealValue(ed) > 0 ? "cash" : (dealPaid(ed) > 0 ? "part" : "credit"));
+    dfLines = ds.map(d => ({ id:d.id, itemId:d.itemId, qty:d.qty, price:d.price || 0, del:dealDelivered(d.id) }));
+  } else {
+    dfGrp = "";
+    dfParty = pid || cs[0].id;
+    dfPay = "cash";
+    const p0 = party(dfParty);
+    dfLines = [{ id:"", itemId:live[0].id, qty:0, price:(p0 && p0.sell) || live[0].cost || 0, del:0 }];
+  }
+  drawDealForm();
+}
+
+function dealTotals(){
+  let tot = 0, prof = 0;
+  const pp = party(dfParty);
+  for (const L of dfLines){
+    const v = (L.qty || 0) * (L.price || 0);
+    tot += v;
+    const c = (pp && pp.cost) || (item(L.itemId)?.cost) || 0;
+    if (c > 0) prof += ((L.price || 0) - c) * (L.qty || 0);
+  }
+  return { tot, prof };
+}
+
+function drawDealForm(){
+  const cs = centers(), live = S.items.filter(i => !i.archived);
+  const ed = !!dfGrp;
+  const { tot, prof } = dealTotals();
+  const paidNow = dfPay === "cash" ? tot : 0;
+
+  const lineHTML = (L, i) => {
+    const it = item(L.itemId), v = (L.qty||0) * (L.price||0);
+    const tint = it ? tintOf(it) : "var(--pri)";
+    return `<div class="card tight dline" data-line="${i}" style="border-inline-start:3px solid ${tint}">
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+        <div style="width:32px;height:32px;border-radius:11px;flex:none;display:grid;place-items:center;background:color-mix(in srgb,${tint} 14%,transparent);color:${tint}">${svg(it?icOf(it):"box",16)}</div>
+        <div style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--ink2)">صنف ${n0(i+1)}</div>
+        ${L.del > 0 ? `<span class="chip info">اتسلّم ${n1(L.del)}</span>` : ""}
+        ${dfLines.length > 1 && L.del <= 0 ? `<button class="rm-btn" data-rml="${i}">${svg("trash",14)}</button>` : ""}
+      </div>
+      <div class="field" style="margin-bottom:9px">
+        <select data-li="${i}">${live.map(x => `<option value="${x.id}" ${x.id===L.itemId?"selected":""}>${esc(x.name)}${x.size?" — "+esc(x.size):""}</option>`).join("")}</select>
+      </div>
+      <div class="grid2" style="margin-bottom:0">
+        <div class="field" style="margin-bottom:0"><label>الكمية</label>
+          <input type="number" inputmode="decimal" data-lq="${i}" value="${L.qty||""}" placeholder="١٠٠"></div>
+        <div class="field" style="margin-bottom:0"><label>سعر البيع</label>
+          <input type="number" inputmode="decimal" data-lp="${i}" value="${L.price||""}" placeholder="٠"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:9px;
+        padding-top:9px;border-top:1px solid var(--line2)">
+        <span class="mut2" style="font-size:11.5px">${it?esc(it.unit):""}</span>
+        <span class="num" style="font-size:15px;color:${tint}">${money(v)}</span>
+      </div>
+    </div>`;
+  };
+
   const h = `
-  <div class="field"><label>المركز</label><select id="dParty">${cs.map(p => `<option value="${p.id}" ${p.id===selP?"selected":""}>${esc(p.name)}</option>`).join("")}</select></div>
-  <div class="field"><label>الصنف</label><select id="dItem">${S.items.filter(i=>!i.archived).map(i => `<option value="${i.id}" ${i.id===selI?"selected":""}>${esc(i.name)}${i.size?" — "+esc(i.size):""}</option>`).join("")}</select></div>
-  <div class="grid2">
-    <div class="field"><label>الكمية المتعاقد عليها</label><input id="dQty" type="number" inputmode="decimal" value="${d?d.qty:""}" placeholder="١٠٠"></div>
-    <div class="field"><label>سعر البيع للوحدة</label><input id="dPrice" type="number" inputmode="decimal" value="${d?d.price:(party(selP)?.sell||"")}" placeholder="٠"></div>
+  <div class="field"><label>المركز</label>
+    <select id="dParty">${cs.map(p => `<option value="${p.id}" ${p.id===dfParty?"selected":""}>${esc(p.name)}</option>`).join("")}</select></div>
+
+  <div class="sec-t" style="margin:16px 2px 8px"><h2 style="font-size:14px">أصناف الطلبية</h2>
+    <span class="mut2" style="font-size:11.5px">${n0(dfLines.length)} صنف</span></div>
+  ${dfLines.map(lineHTML).join("")}
+  <button class="btn ghost wide sm" id="dAdd" style="margin-bottom:14px">${svg("plus",14)} ضيف صنف تاني للطلبية</button>
+
+  <div class="card" style="background:var(--surf2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:9px">
+      <span class="mut" style="font-size:12.5px">إجمالي الطلبية</span>
+      <span class="num" id="dTotal" style="font-size:22px">${money(tot)}</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span class="mut" style="font-size:12.5px">الربح المتوقّع</span>
+      <span class="num" id="dProfit" style="font-size:16px;color:${prof>0?"var(--ok)":"var(--ink2)"}">${prof?money(prof):"—"}</span>
+    </div>
   </div>
-  <div class="card tight" style="background:var(--surf2);display:flex;justify-content:space-between;align-items:center">
-    <span class="mut" style="font-size:12.5px">الربح المتوقّع</span>
-    <span class="num" id="dProfit" style="font-size:19px;color:var(--ok)">${money(0)}</span>
+
+  <div class="field"><label>الدفع</label>
+    <div class="picks" id="dPayW">
+      <button class="pick ${dfPay==="cash"?"on":""}" data-pw="cash">مدفوعة كاش</button>
+      <button class="pick ${dfPay==="credit"?"on":""}" data-pw="credit">آجل</button>
+      <button class="pick ${dfPay==="part"?"on":""}" data-pw="part">دفعة مقدّمة</button>
+    </div>
+    <div class="hint" id="dPayHint"></div>
   </div>
-  <div class="card tight" style="background:var(--surf2);display:flex;justify-content:space-between;align-items:center">
-    <span class="mut" style="font-size:12.5px">إجمالي الطلبية</span>
-    <span class="num" id="dTotal" style="font-size:20px">${money(d?d.qty*(d.price||0):0)}</span>
-  </div>
-  <div class="field"><label>المدفوع</label><input id="dPaid" type="number" inputmode="decimal" value="${d?d.paid:""}" placeholder="٠">
-    <div class="hint"><span id="dFill" style="color:var(--pri);font-weight:600;cursor:pointer">دفع الإجمالي كامل</span></div></div>
-  <div class="field"><label>التاريخ</label><input id="dDate" type="date" value="${d?d.date:todayISO()}"></div>
-  <div class="field"><label>ملاحظة</label><input id="dNote" value="${esc(d?d.note:"")}" placeholder="رقم العقد أو أي تفاصيل"></div>
-  ${d?`<div class="card tight" style="background:var(--info-soft);border-color:transparent"><div style="font-size:12.5px">اتسلّم منها ${n1(dealDelivered(d.id))} — مينفعش تقلّل الكمية عن كده.</div></div>`:""}
-  <button class="btn wide" id="dSave">${svg("check",16)} ${d?"احفظ التعديل":"سجّل الطلبية"}</button>
-  ${d?`<button class="btn danger wide sm" style="margin-top:9px" id="dDel">${svg("trash",14)} احذف الطلبية</button>`:""}
+  <div class="field ${dfPay==="part"?"":"hide"}" id="dPaidWrap"><label>المدفوع مقدّم</label>
+    <input id="dPaid" type="number" inputmode="decimal" value="${dfPay==="part"&&dfLines.length?dfLines.reduce((a,L)=>a+(L.paid||0),0)||"":""}" placeholder="٠">
+    <div class="hint" id="dRestHint"></div></div>
+
+  <div class="field"><label>التاريخ</label><input id="dDate" type="date" value="${ed?(groupDeals(dfGrp)[0]||{}).date||todayISO():todayISO()}"></div>
+  <div class="field"><label>ملاحظة</label><input id="dNote" value="${esc(ed?(groupDeals(dfGrp)[0]||{}).note||"":"")}" placeholder="رقم العقد أو أي تفاصيل"></div>
+
+  ${ed && dfLines.some(L => L.del > 0) ? `<div class="card tight" style="background:var(--info-soft);border-color:transparent">
+    <div style="font-size:12.5px;line-height:1.6">فيه أصناف اتسلّم منها — مينفعش تقلّل كميتها عن اللي اتسلّم، ومينفعش تشيلها.</div></div>` : ""}
+
+  <button class="btn wide" id="dSave">${svg("check",16)} ${ed?"احفظ التعديل":"سجّل الطلبية"}</button>
+  ${ed ? `<button class="btn danger wide sm" style="margin-top:9px" id="dDel">${svg("trash",14)} احذف الطلبية</button>` : ""}
   <div style="height:10px"></div>`;
-  sheet(d ? "تعديل طلبية" : "طلبية مدفوعة", h, () => {
-    const upd = () => {
-      const q = +$("#dQty").value || 0, pr = +$("#dPrice").value || 0;
-      $("#dTotal").textContent = money(q * pr);
-      const pp = party($("#dParty").value);
-      const c = (pp && pp.cost) || (item($("#dItem").value)?.cost) || 0;
-      const pf = (pr - c) * q;
-      const el = $("#dProfit");
-      el.textContent = c > 0 ? money(pf) : "—";
-      el.style.color = pf > 0 ? "var(--ok)" : pf < 0 ? "var(--bad)" : "var(--ink2)";
+
+  sheet(ed ? "تعديل طلبية" : "طلبية جديدة", h, () => {
+    const sync = () => {
+      const { tot, prof } = dealTotals();
+      $("#dTotal").textContent = money(tot);
+      const pe = $("#dProfit");
+      pe.textContent = prof ? money(prof) : "—";
+      pe.style.color = prof > 0 ? "var(--ok)" : prof < 0 ? "var(--bad)" : "var(--ink2)";
+      $("#dPayHint").textContent =
+        dfPay === "cash" ? `المركز دفع ${money(tot)} كامل.`
+        : dfPay === "credit" ? `كل ${money(tot)} هتفضل على حساب المركز لحد ما تحصّلها.`
+        : "اكتب المدفوع مقدّم والباقي هيفضل مستحق.";
+      const rh = $("#dRestHint");
+      if (rh){
+        const paid = +($("#dPaid")?.value || 0);
+        rh.innerHTML = `الباقي على الحساب <b style="color:${tot-paid>0?"var(--warn)":"var(--ok)"}">${money(Math.max(0,tot-paid))}</b>`;
+      }
     };
-    $("#dParty").onchange = () => { const pp = party($("#dParty").value); if (pp && pp.sell) $("#dPrice").value = pp.sell; upd(); };
-    $("#dItem").onchange = upd;
-    $("#dQty").oninput = upd; $("#dPrice").oninput = upd;
-    $("#dFill").onclick = () => { $("#dPaid").value = (+$("#dQty").value||0) * (+$("#dPrice").value||0); buzz(6); };
+    const redraw = () => drawDealForm();
+
+    $("#dParty").onchange = e => {
+      dfParty = e.target.value;
+      const pp = party(dfParty);
+      if (pp && pp.sell) dfLines.forEach(L => { if (!L.del) L.price = pp.sell; });
+      redraw();
+    };
+    $$("#sheetBody [data-li]").forEach(sel => sel.onchange = e => {
+      const i = +sel.dataset.li;
+      dfLines[i].itemId = e.target.value;
+      const pp = party(dfParty);
+      if (!dfLines[i].price) dfLines[i].price = (pp && pp.sell) || item(e.target.value)?.cost || 0;
+      redraw();
+    });
+    $$("#sheetBody [data-lq]").forEach(inp => inp.oninput = () => { dfLines[+inp.dataset.lq].qty = +inp.value || 0; sync(); });
+    $$("#sheetBody [data-lp]").forEach(inp => inp.oninput = () => { dfLines[+inp.dataset.lp].price = +inp.value || 0; sync(); });
+    $$("#sheetBody [data-rml]").forEach(b => b.onclick = () => {
+      const i = +b.dataset.rml;
+      if (dfLines[i].del > 0) return toast("اتسلّم منه — مينفعش يتشال");
+      dfLines.splice(i,1); buzz(8); redraw();
+    });
+    $("#dAdd").onclick = () => {
+      const pp = party(dfParty);
+      const used = dfLines.map(L => L.itemId);
+      const next = live.find(x => !used.includes(x.id)) || live[0];
+      dfLines.push({ id:"", itemId:next.id, qty:0, price:(pp && pp.sell) || next.cost || 0, del:0 });
+      buzz(10); redraw();
+    };
+    $$("#dPayW .pick").forEach(b => b.onclick = () => {
+      dfPay = b.dataset.pw;
+      $$("#dPayW .pick").forEach(x => x.classList.toggle("on", x===b));
+      $("#dPaidWrap").classList.toggle("hide", dfPay !== "part");
+      buzz(6); sync();
+    });
+    if ($("#dPaid")) $("#dPaid").oninput = sync;
+    sync();
+
     $("#dSave").onclick = () => {
-      const qty = +$("#dQty").value || 0;
-      if (qty <= 0) return toast("اكتب الكمية");
-      if (d && qty < dealDelivered(d.id)) return toast(`اتسلّم منها ${n1(dealDelivered(d.id))} — الكمية مينفعش تقل عن كده`);
-      const o = { partyId:$("#dParty").value, itemId:$("#dItem").value, qty, price:+$("#dPrice").value||0,
-                  paid:+$("#dPaid").value||0, date:$("#dDate").value||todayISO(), note:$("#dNote").value.trim() };
-      if (d) Object.assign(d, o); else { o.id = uid(); o.at = now(); S.deals.push(o); }
-      persist(); buzz(18); closeSheet(); render(); toast(d?"اتحفظ":"الطلبية اتسجّلت 🎉");
+      const lines = dfLines.filter(L => (L.qty || 0) > 0);
+      if (!lines.length) return toast("اكتب كمية لصنف واحد على الأقل");
+      for (const L of lines) if (L.del > 0 && L.qty < L.del)
+        return toast(`${item(L.itemId)?.name || "صنف"}: اتسلّم منه ${n1(L.del)} — الكمية مينفعش تقل عن كده`);
+
+      const date = $("#dDate").value || todayISO();
+      const note = $("#dNote").value.trim();
+      const { tot } = dealTotals();
+      const down = dfPay === "part" ? Math.min(tot, +($("#dPaid")?.value || 0)) : 0;
+      const grp = dfGrp || uid();
+
+      /* المقدّم بيتوزّع على الأصناف بنسبة قيمتها */
+      const paidOf = (v) => dfPay === "cash" ? v : dfPay === "part" && tot > 0 ? Math.round((v/tot) * down * 100)/100 : 0;
+
+      const keep = [];
+      for (const L of lines){
+        const v = L.qty * (L.price || 0);
+        const o = { partyId:dfParty, itemId:L.itemId, qty:L.qty, price:L.price || 0,
+                    paid:paidOf(v), pay:dfPay, date, note, grp };
+        if (L.id){
+          const ex = S.deals.find(x => x.id === L.id);
+          if (ex){ Object.assign(ex, o); keep.push(ex.id); continue; }
+        }
+        o.id = uid(); o.at = now();
+        S.deals.push(o); keep.push(o.id);
+      }
+      /* أي صنف اتشال من الطلبية */
+      if (dfGrp) S.deals = S.deals.filter(x => dealGroup(x) !== dfGrp || keep.includes(x.id) || dealDelivered(x.id) > 0);
+
+      persist(); buzz(20); closeSheet(); render();
+      toast(dfGrp ? "اتحفظ" : `الطلبية اتسجّلت — ${n0(lines.length)} صنف · ${money(tot)} 🎉`);
     };
+
     if ($("#dDel")) $("#dDel").onclick = () => {
-      if (dealDelivered(d.id) > 0) return toast("فيه تسليمات عليها — مينفعش تتحذف");
-      S.deals = S.deals.filter(x => x.id !== d.id); persist(); closeSheet(); render(); toast("اتحذفت");
+      const ds = groupDeals(dfGrp);
+      if (ds.some(x => dealDelivered(x.id) > 0)) return toast("فيه تسليمات عليها — مينفعش تتحذف");
+      S.deals = S.deals.filter(x => dealGroup(x) !== dfGrp);
+      S.cols = (S.cols || []).filter(c => !ds.some(x => x.id === c.dealId));
+      persist(); closeSheet(); render(); toast("اتحذفت");
     };
   });
 }
