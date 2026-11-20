@@ -394,7 +394,7 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
 .sheet{
   position:fixed;inset-inline:0;bottom:0;z-index:61;max-width:520px;margin:0 auto;
   background:var(--surf);border-radius:26px 26px 0 0;box-shadow:var(--sh-3);
-  transform:translateY(102%);transition:transform .42s var(--spring-soft);
+  transform:translateY(102%);transition:transform .34s var(--spring-soft);
   max-height:92vh;display:flex;flex-direction:column;
 }
 .sheet.on{transform:translateY(0)}
@@ -538,6 +538,87 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
 }
+
+/* ===================== MOTION UI =====================
+   GSAP في motion.js. هنا بس اللي CSS أنسب له:
+   شيمر التحميل، لمسة الزرار، رفع خفيف بالماوس، مؤشر التاب.
+   الطباعة وتقليل الحركة بيقفلوا الحركة. */
+.skel{
+  position:relative;overflow:hidden;background:var(--line2);
+  border:1px solid var(--line);border-radius:var(--r-lg);
+}
+.skel::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--surf) 72%,transparent),transparent);
+  transform:translate3d(100%,0,0);
+  animation:sk-shimmer 1.15s ease-in-out infinite;
+}
+@keyframes sk-shimmer{from{transform:translate3d(100%,0,0)}to{transform:translate3d(-100%,0,0)}}
+.sk-wrap{padding-top:2px}
+.sk-hero{height:168px;border-radius:var(--r-xl);margin-bottom:14px}
+.sk-row{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:14px}
+.sk-tile{height:74px;border-radius:var(--r)}
+.sk-card{height:112px;margin-bottom:14px}
+.sk-card.short{height:84px}
+
+html.motion .screen.on.fwd,
+html.motion .screen.on.bwd,
+html.motion .screen.on.anim > *,
+html.motion .auth-crest{animation:none}
+/* لمعان الشريط وأيقونة الطفو كانوا شغالين طول الوقت — بنوقفهم عشان البطارية */
+html.motion .floaty{animation:none}
+html.motion .hb-fill::after,
+html.motion .dep i::after{content:none;animation:none}
+
+html.motion .ripple-host{
+  position:absolute;inset:0;overflow:hidden;border-radius:inherit;
+  pointer-events:none;z-index:2;
+}
+html.motion .ripple{
+  position:absolute;width:12px;height:12px;border-radius:50%;
+  background:currentColor;pointer-events:none;
+}
+html.motion .btn,
+html.motion .tile,
+html.motion .pill,
+html.motion .pick,
+html.motion .seg button,
+html.motion .sheet-x,
+html.motion .who{position:relative}
+
+html.motion .seg{position:relative}
+html.motion .seg-pill{
+  position:absolute;left:0;top:0;z-index:0;pointer-events:none;
+  border-radius:11px;background:var(--surf);box-shadow:var(--sh-1);
+}
+html.motion .seg.has-pill button{
+  position:relative;z-index:1;background:transparent;box-shadow:none;
+  transition:color .18s linear;
+}
+html.motion .seg.has-pill button.on{background:transparent;box-shadow:none;color:var(--ink)}
+
+@media (hover:hover) and (pointer:fine) and (prefers-reduced-motion:no-preference){
+  html.motion .card:hover,
+  html.motion .stat:hover,
+  html.motion .tile:hover{
+    transform:translate3d(0,-2px,0);
+    transition:transform .2s var(--out);
+  }
+  html.motion .tile:hover:active{transform:scale(.93)}
+  html.motion .stat:hover:active{transform:scale(.96)}
+}
+@media (prefers-reduced-motion:reduce){
+  .skel::after{animation:none!important;opacity:0!important}
+  html.motion .card:hover,
+  html.motion .stat:hover,
+  html.motion .tile:hover{transform:none!important}
+}
+@media print{
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .skel::after,.ripple-host,.seg-pill{display:none!important}
+  .screen,.card,.hero,.sheet,#auth,#sheetBody{opacity:1!important;transform:none!important}
+  html.motion .seg.has-pill button.on{background:var(--surf)!important}
+}
 </style>
 </head>
 <body>
@@ -576,7 +657,14 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
   </header>
 
   <main>
-    <section class="screen" id="s-home"></section>
+    <section class="screen on" id="s-home" aria-busy="true">
+      <div class="sk-wrap" aria-hidden="true">
+        <div class="skel sk-hero"></div>
+        <div class="sk-row"><div class="skel sk-tile"></div><div class="skel sk-tile"></div><div class="skel sk-tile"></div><div class="skel sk-tile"></div></div>
+        <div class="skel sk-card"></div>
+        <div class="skel sk-card short"></div>
+      </div>
+    </section>
     <section class="screen" id="s-stock"></section>
     <section class="screen" id="s-centers"></section>
     <section class="screen" id="s-moves"></section>
@@ -627,6 +715,8 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
 <div id="toast"><div id="toastMsg"></div></div>
 
 <div id="auth"><div class="auth-box" id="authBox"></div></div>
+<script src="vendor/gsap/gsap.min.js?v=1"></script>
+<script src="motion.js?v=1"></script>
 <div id="lock" class="hide">
   <div style="text-align:center">
     <div style="width:60px;height:60px;border-radius:20px;margin:0 auto 14px;display:grid;place-items:center;background:linear-gradient(150deg,var(--pri),var(--acc))">
@@ -641,7 +731,7 @@ html[dir="rtl"] .switch.on i{transform:translateX(-19px)}
 <script>
 /* =========================================================
    مخزوني — إدارة المخازن والاستهلاك
-   ملف واحد، بدون أي مكتبات خارجية غير خطوط جوجل
+   ملف واحد. الحركة في motion.js (GSAP محلي، مش من CDN)
    ========================================================= */
 "use strict";
 
@@ -1025,17 +1115,21 @@ function dailySeries(days, itemId, kind){
 let NAVHIST = [];
 function go(scr, back){
   if (scr === SCR) return;
+  const prev = $("#s-" + SCR);
   if (back) NAVHIST.pop();
   else { NAVHIST.push(SCR); if (NAVHIST.length > 12) NAVHIST.shift(); }
   const dir = back ? "bwd" : "fwd";
   SCR = scr;
+  if (window.Motion) Motion.beforeRender(prev);
   $$(".screen").forEach(el => el.classList.remove("on","fwd","bwd","anim"));
   $$("#nav button").forEach(b => b.classList.toggle("on", b.dataset.scr === scr));
+  if (window.Motion) Motion.arm(dir);
   render();
   const el = $("#s-" + scr);
-  el.classList.add("on", dir, "anim");
+  el.classList.add("on", dir);
+  if (window.Motion) Motion.enter(el, dir);
+  else { el.classList.add("anim"); setTimeout(() => el.classList.remove("anim"), 900); }
   window.scrollTo({ top:0, behavior:"instant" });
-  setTimeout(() => el.classList.remove("anim"), 900);
 }
 /* رجوع: يقفل الشيت الأول، وبعدين يرجّع شاشة */
 function goBack(){
@@ -1045,8 +1139,13 @@ function goBack(){
   return false;
 }
 function render(){
+  const el = $("#s-" + SCR);
+  if (window.Motion) Motion.beforeRender(el);
   ({ home:renderHome, stock:renderStock, centers:renderCenters, moves:renderMoves, reports:renderReports, more:renderMore }[SCR] || renderHome)();
   refreshBadges();
+  if (el) el.removeAttribute("aria-busy");
+  if (window.Motion && Motion.consumeArm()) return;
+  if (window.Motion && el && el.classList.contains("on")) Motion.sync(el);
 }
 function refreshBadges(){
   const A = alerts(), crit = A.filter(a => a.sev >= 2).length;
@@ -1422,7 +1521,7 @@ function renderCenters(){
   }
   $("#s-centers").innerHTML = h;
   const si = $("#cenSearch");
-  if (si) si.oninput = () => { cenQ = si.value; const c = si.selectionStart; renderCenters(); const n = $("#cenSearch"); n.focus(); n.setSelectionRange(c,c); };
+  if (si) si.oninput = () => { cenQ = si.value; const c = si.selectionStart; render(); const n = $("#cenSearch"); n.focus(); n.setSelectionRange(c,c); };
   $$("#s-centers [data-cen]").forEach(el => el.onclick = e => {
     if (e.target.closest("[data-deliver],[data-newdeal],[data-collectc]")) return; openCenter(el.dataset.cen);
   });
@@ -2021,7 +2120,7 @@ function renderStock(){
     <button class="${stockTab==="items"?"on":""}" data-stk="items">الأصناف</button>
     <button class="${stockTab==="sup"?"on":""}" data-stk="sup">الموردين والمشتريات</button>
   </div>`;
-  const bindTabs = () => $$("#s-stock [data-stk]").forEach(b => b.onclick = () => { stockTab = b.dataset.stk; buzz(6); renderStock(); });
+  const bindTabs = () => $$("#s-stock [data-stk]").forEach(b => b.onclick = () => { stockTab = b.dataset.stk; buzz(6); render(); });
   if (stockTab === "sup"){
     $("#s-stock").innerHTML = seg + renderSuppliers();
     bindTabs();
@@ -2091,10 +2190,10 @@ function renderStock(){
   bindTabs();
 
   const si = $("#stockSearch");
-  si.oninput = () => { stockQ = si.value; const p = si.selectionStart; renderStock(); const n = $("#stockSearch"); n.focus(); n.setSelectionRange(p,p); };
-  $$("#s-stock [data-cat]").forEach(b => b.onclick = () => { stockCat = b.dataset.cat; buzz(6); renderStock(); });
-  $$("#s-stock [data-store]").forEach(b => b.onclick = () => { stockStore = b.dataset.store; buzz(6); renderStock(); });
-  $$("#s-stock [data-sort]").forEach(b => b.onclick = () => { stockSort = b.dataset.sort; buzz(6); renderStock(); });
+  si.oninput = () => { stockQ = si.value; const p = si.selectionStart; render(); const n = $("#stockSearch"); n.focus(); n.setSelectionRange(p,p); };
+  $$("#s-stock [data-cat]").forEach(b => b.onclick = () => { stockCat = b.dataset.cat; buzz(6); render(); });
+  $$("#s-stock [data-store]").forEach(b => b.onclick = () => { stockStore = b.dataset.store; buzz(6); render(); });
+  $$("#s-stock [data-sort]").forEach(b => b.onclick = () => { stockSort = b.dataset.sort; buzz(6); render(); });
   $$("#s-stock [data-item]").forEach(el => el.onclick = e => { if (e.target.closest("[data-quick]")) return; openItem(el.dataset.item); });
   $$("#s-stock [data-quick]").forEach(b => b.onclick = e => { e.stopPropagation(); const [t,id] = b.dataset.quick.split("|"); openMoveForm(t, id); });
 }
@@ -2139,9 +2238,9 @@ function renderMoves(){
       <div class="card"><div class="rows">${groups[d].map(m => moveRow(m)).join("")}</div></div>`).join("");
   }
   $("#s-moves").innerHTML = head + `<div>${body}</div>`;
-  $$("#s-moves [data-range]").forEach(b => b.onclick = () => { mvRange = +b.dataset.range; buzz(6); renderMoves(); });
-  $$("#s-moves [data-type]").forEach(b => b.onclick = () => { mvType = b.dataset.type; buzz(6); renderMoves(); });
-  $$("#s-moves [data-mvitem]").forEach(b => b.onclick = () => { mvItem = b.dataset.mvitem; buzz(6); renderMoves(); });
+  $$("#s-moves [data-range]").forEach(b => b.onclick = () => { mvRange = +b.dataset.range; buzz(6); render(); });
+  $$("#s-moves [data-type]").forEach(b => b.onclick = () => { mvType = b.dataset.type; buzz(6); render(); });
+  $$("#s-moves [data-mvitem]").forEach(b => b.onclick = () => { mvItem = b.dataset.mvitem; buzz(6); render(); });
   $$("#s-moves [data-move]").forEach(el => el.onclick = () => openMoveDetail(el.dataset.move));
 }
 
@@ -2332,7 +2431,7 @@ function renderReports(){
   </div>`;
 
   $("#s-reports").innerHTML = h;
-  $$("#s-reports [data-rr]").forEach(b => b.onclick = () => { repRange = +b.dataset.rr; buzz(6); renderReports(); });
+  $$("#s-reports [data-rr]").forEach(b => b.onclick = () => { repRange = +b.dataset.rr; buzz(6); render(); });
   $$("#s-reports [data-item]").forEach(el => el.onclick = () => openItem(el.dataset.item));
   $$("#s-reports [data-cenr]").forEach(el => el.onclick = () => openCenter(el.dataset.cenr));
 }
@@ -2437,6 +2536,8 @@ function moreAction(a){
    الشيتات
    ========================================================= */
 function sheet(title, html, onOpen){
+  const fresh = !$("#sheet").classList.contains("on");
+  if (window.Motion) Motion.beforeSheet();
   $("#sheetTitle").textContent = title;
   $("#sheetBody").innerHTML = html;
   $("#sheet").classList.add("on");
@@ -2448,8 +2549,10 @@ function sheet(title, html, onOpen){
   x.onclick = (e) => { e.preventDefault(); e.stopPropagation(); closeSheet(); };
   x.ontouchend = (e) => { e.preventDefault(); closeSheet(); };
   if (onOpen) onOpen();
+  if (window.Motion) Motion.sheetIn($("#sheetBody"), fresh);
 }
 function closeSheet(){
+  if (window.Motion) Motion.sheetOut();
   const sh = $("#sheet");
   sh.classList.remove("on");
   sh.style.transform = "";
@@ -3668,6 +3771,7 @@ function authView(mode){
       signIn(u);
     };
     setTimeout(() => { const el = $("#suName"); if (el && el.focus) el.focus(); }, 350);
+    if (window.Motion) Motion.authIn(box);
     return;
   }
 
@@ -3690,13 +3794,22 @@ function authView(mode){
   };
   $("#lgGo").onclick = go;
   $("#lgPass").onkeydown = e => { if (e.key === "Enter") go(); };
+  if (window.Motion) Motion.authIn(box);
 }
 function signIn(u){
   ME = u;
   try{ localStorage.setItem(UKEY, u.id); }catch(e){}
-  $("#auth").classList.remove("on");
   document.body.style.overflow = "";
-  buzz(18); applyRole(); render();
+  buzz(18); applyRole();
+  const auth = $("#auth");
+  const done = () => auth.classList.remove("on");
+  if (window.Motion) Motion.authOut(auth, done);
+  else done();
+  if (window.Motion) Motion.arm("fwd");
+  render();
+  const el = $("#s-" + SCR);
+  if (el) el.classList.add("on");
+  if (window.Motion) Motion.enter(el, "fwd");
   toast(`أهلاً ${u.name.split(" ")[0]} 👋`);
 }
 function signOut(){
@@ -4627,9 +4740,15 @@ addEventListener("keydown", e => {
   setTheme(S.cfg.theme || "auto");
   if (MQ.addEventListener) MQ.addEventListener("change", () => setTheme(S.cfg.theme));
   bootAuth();
-  $("#s-home").classList.add("on","anim");
+  const authOn = $("#auth").classList.contains("on");
+  $("#s-home").classList.add("on");
+  if (window.Motion && !authOn) Motion.arm("boot");
   render();
-  setTimeout(() => $("#s-home").classList.remove("anim"), 900);
+  if (window.Motion && !authOn) Motion.enter($("#s-home"), "boot");
+  else if (!window.Motion){
+    $("#s-home").classList.add("anim");
+    setTimeout(() => $("#s-home").classList.remove("anim"), 900);
+  }
 
   /* المزامنة */
   loadSess();
