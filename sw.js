@@ -2,8 +2,15 @@
    HTML: network-first (عشان أي نشر جديد يوصل على طول)
    باقي الملفات: cache-first
    /api/ و /healthz: مفيش كاش خالص                                   */
-const CACHE = "mystock-v1";
-const SHELL = ["./", "./index.html", "./icon.svg", "./manifest.webmanifest"];
+const CACHE = "mystock-v2";
+const SHELL = [
+  "./",
+  "./index.html",
+  "./icon.svg",
+  "./manifest.webmanifest",
+  "./motion.js?v=1",
+  "./vendor/gsap/gsap.min.js?v=1"
+];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
