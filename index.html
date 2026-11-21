@@ -14,7 +14,7 @@
 <meta name="description" content="مخزوني — إدارة المخازن واستهلاك الورق والفيلم، عربي بالكامل، يشتغل أوفلاين">
 <link rel="preload" href="fonts/plex-arabic-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/plex-arabic-700.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 <div id="app">
@@ -663,22 +663,18 @@ function renderHome(){
     </div>`;
   } else if (!risky){
     hero = `<div class="hero">
-      ${heroRing(fillPct(), "#8FD3FF")}
       <div class="lbl">${svg("info",14)} <span>لسه مفيش استهلاك</span></div>
       <div class="big dsp">${n0(live.length)}<span class="unit">صنف</span></div>
       <div class="note">سجّل أول عملية صرف عشان نحسب معدل الاستهلاك وأيام التغطية.</div>
       ${heroGrid(val, belowMin, monthOut)}
     </div>`;
   } else {
-    const st = covState(risky.cv);
-    const ringTint = st === "bad" ? "#FF8A80" : st === "warn" ? "#FFD16B" : "#5BE3A7";
     const days = Math.floor(risky.cv);
     const runOut = addDays(t, days);
     const ro = new Date(runOut + "T00:00:00");
     const lead = risky.it.lead || 0;
     const orderBy = lead ? addDays(runOut, -lead) : "";
     hero = `<div class="hero">
-      ${heroRing(fillPct(), ringTint)}
       <div class="lbl">${svg("clock",14)} <span>أول صنف هيخلص</span></div>
       <div class="big dsp">${n0(ro.getDate())} ${AR_MON[ro.getMonth()]}<span class="unit">${days<=0?"دلوقتي":days===1?"بكرة":`بعد ${n0(days)} يوم`}</span></div>
       <div class="note">${esc(risky.it.name)} — فاضل ${n1(risky.b)} ${esc(risky.it.unit)} وبتصرف ${n1(risky.a)} في اليوم${orderBy && days>0 ? ` · اطلب قبل ${fDate(orderBy)}` : ""}</div>
@@ -799,28 +795,6 @@ function paperPulled(from, to){
     if (it && SHEETY.includes(it.unit)) q += m.qty;
   }
   return q;
-}
-/* نسبة امتلاء المخزن — الموجود مقابل أعلى رصيد وصله */
-function fillPct(){
-  const live = S.items.filter(i => !i.archived);
-  if (!live.length) return 0;
-  let now = 0, ref = 0;
-  for (const i of live){ now += Math.max(0, balance(i.id)); ref += refLevel(i); }
-  return ref > 0 ? Math.max(0, Math.min(1, now / ref)) : 0;
-}
-/* إطار بيلف حوالين الكارت وبيزيد ويقل مع الرصيد */
-function heroRing(pct, tint){
-  const W = 340, H = 190, R = 26, sw = 3.5, pad = sw/2;
-  const w = W - sw, h = H - sw;
-  const d = `M ${pad+R} ${pad} H ${pad+w-R} A ${R} ${R} 0 0 1 ${pad+w} ${pad+R}`
-          + ` V ${pad+h-R} A ${R} ${R} 0 0 1 ${pad+w-R} ${pad+h}`
-          + ` H ${pad+R} A ${R} ${R} 0 0 1 ${pad} ${pad+h-R}`
-          + ` V ${pad+R} A ${R} ${R} 0 0 1 ${pad+R} ${pad} Z`;
-  const len = 2*(w-2*R) + 2*(h-2*R) + 2*Math.PI*R;
-  return `<svg class="hero-ring" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-    <path class="trk" d="${d}"/>
-    <path class="bar" d="${d}" style="stroke:${tint};color:${tint};--len:${len.toFixed(0)};--off:${(len*(1-pct)).toFixed(0)}"/>
-  </svg>`;
 }
 function heroGrid(val, belowMin, monthOut){
   const t = todayISO();

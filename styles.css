@@ -212,7 +212,7 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 button{background:none;border:0;cursor:pointer;padding:0}
 a{color:var(--pri);text-decoration:none}
 ::selection{background:color-mix(in srgb,var(--acc) 28%,transparent)}
-:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
 ::-webkit-scrollbar{width:0;height:0}
 .num,.dsp{
   font-family:var(--font);
@@ -326,30 +326,20 @@ html[dir="rtl"] #edgeHint{border-radius:22px 0 0 22px;transform:translate(100%,-
 
 /* ---------- البطل ---------- */
 .hero{
-  position:relative;overflow:hidden;border-radius:var(--r-xl);
+  position:relative;border-radius:var(--r-xl);
   padding:18px 18px 16px;margin-bottom:14px;color:var(--hero-ink);
   background:linear-gradient(165deg, var(--hero-1) 0%, var(--hero-2) 100%);
   border:1px solid var(--hero-line);
+  border-inline-start:4px solid var(--acc);
   box-shadow:var(--sh-2);
-}
-.hero::before{
-  content:"";position:absolute;inset-inline-start:0;top:0;bottom:0;width:4px;
-  background:var(--acc);pointer-events:none;
 }
 .hero .lbl{font-size:12px;color:var(--hero-muted);display:flex;align-items:center;gap:6px}
 .hero .big{font-size:40px;line-height:1.08;margin:6px 0 2px;letter-spacing:-.03em}
 .hero .unit{font-size:15px;color:var(--hero-muted);font-weight:500;margin-inline-start:6px}
 .hero .note{font-size:13px;color:var(--hero-muted);line-height:1.6}
 .hero-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px;position:relative}
-.hero-ring{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
-.hero-ring .trk,.hero-ring .bar{vector-effect:non-scaling-stroke}
-.hero-ring .trk{fill:none;stroke:rgba(255,255,255,.16);stroke-width:3}
-.hero-ring .bar{
-  fill:none;stroke-width:3.5;stroke-linecap:round;
-  stroke-dasharray:var(--len);stroke-dashoffset:var(--len);
-  animation:ringfill 1.25s var(--out) .15s forwards;
-}
-@keyframes ringfill{to{stroke-dashoffset:var(--off)}}
+/* حلقة الرصيد كانت SVG ممدود بلون أزرق فاتح، فكانت تبان كإطار تركيز وبتقص حافة النحاس */
+.hero-ring{display:none}
 .hero-cap{
   display:flex;align-items:center;gap:8px;margin-top:12px;position:relative;
   background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
@@ -492,8 +482,8 @@ html[dir="rtl"] #edgeHint{border-radius:22px 0 0 22px;transform:translate(100%,-
   padding:8px 14px;margin-bottom:12px;
 }
 .search svg{width:18px;height:18px;color:var(--ink3);flex:none}
-.search input{flex:1;border:0;outline:0;background:transparent;font-size:16px;min-width:0}
-.search input:focus{outline:0}
+.search input{flex:1;border:0;background:transparent;font-size:16px;min-width:0}
+.search input:focus:not(:focus-visible){outline:0}
 
 /* ---------- النماذج ---------- */
 .field{margin-bottom:14px}
@@ -501,7 +491,7 @@ html[dir="rtl"] #edgeHint{border-radius:22px 0 0 22px;transform:translate(100%,-
 .field input,.field select,.field textarea{
   width:100%;min-height:48px;padding:12px 14px;border-radius:14px;
   border:1px solid var(--line);background:var(--surf);
-  outline:0;font-size:16px;transition:border-color .2s,box-shadow .2s;
+  font-size:16px;transition:border-color .2s,box-shadow .2s;
 }
 .field textarea{min-height:88px;resize:vertical;line-height:1.6}
 .field input:focus,.field select:focus,.field textarea:focus{

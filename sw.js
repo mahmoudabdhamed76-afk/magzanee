@@ -2,11 +2,11 @@
    HTML: network-first (عشان أي نشر جديد يوصل على طول)
    باقي الملفات: cache-first
    /api/ و /healthz: مفيش كاش خالص                                   */
-const CACHE = "mystock-v3";
+const CACHE = "mystock-v4";
 const SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=3",
+  "./styles.css?v=4",
   "./icon.svg",
   "./manifest.webmanifest",
   "./motion.js?v=1",
