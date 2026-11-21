@@ -2,7 +2,7 @@
    HTML: network-first (عشان أي نشر جديد يوصل على طول)
    باقي الملفات: cache-first
    /api/ و /healthz: مفيش كاش خالص                                   */
-const CACHE = "mystock-v4";
+const CACHE = "mystock-v5";
 const SHELL = [
   "./",
   "./index.html",
@@ -10,6 +10,8 @@ const SHELL = [
   "./icon.svg",
   "./manifest.webmanifest",
   "./motion.js?v=1",
+  "./apple.css?v=2",
+  "./extras.js?v=1",
   "./vendor/gsap/gsap.min.js?v=1",
   "./fonts/plex-arabic-400.woff2",
   "./fonts/plex-arabic-500.woff2",

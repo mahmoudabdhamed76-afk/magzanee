@@ -192,3 +192,111 @@ html[data-theme="dark"] .seg button.on{background:#636366}
 .who .av{background:var(--pri)!important}
 
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* =========================================================
+   حركة (Motion): ميكرو-تفاعلات على طريقة Apple
+   كل ده CSS + transform/opacity بس (خفيف على الموبايل)
+   ========================================================= */
+:root{--ease-ios:cubic-bezier(.2,.8,.2,1);--spring-ios:cubic-bezier(.34,1.45,.5,1)}
+
+/* دخول متتالي للكروت */
+@keyframes aIn{from{opacity:0;transform:translateY(18px) scale(.985)}to{opacity:1;transform:none}}
+.screen.on > .card,.screen.on > .stat-grid,.screen.on > .tiles,.screen.on > .hero,.screen.on > .seg,.screen.on > .search,.screen.on > .scroller{
+  animation:aIn .6s var(--ease-ios) both}
+.screen.on > :nth-child(1){animation-delay:.00s}.screen.on > :nth-child(2){animation-delay:.05s}
+.screen.on > :nth-child(3){animation-delay:.10s}.screen.on > :nth-child(4){animation-delay:.15s}
+.screen.on > :nth-child(5){animation-delay:.20s}.screen.on > :nth-child(6){animation-delay:.25s}
+.screen.on > :nth-child(n+7){animation-delay:.30s}
+.stat-grid > .stat{animation:aIn .6s var(--ease-ios) both}
+.stat-grid > .stat:nth-child(1){animation-delay:.10s}.stat-grid > .stat:nth-child(2){animation-delay:.16s}
+.stat-grid > .stat:nth-child(3){animation-delay:.22s}.stat-grid > .stat:nth-child(4){animation-delay:.28s}
+.tiles > .tile{animation:aIn .55s var(--spring-ios) both}
+.tiles > .tile:nth-child(1){animation-delay:.12s}.tiles > .tile:nth-child(2){animation-delay:.18s}
+.tiles > .tile:nth-child(3){animation-delay:.24s}.tiles > .tile:nth-child(4){animation-delay:.30s}
+.rows > .row{animation:aIn .45s var(--ease-ios) both}
+.rows > .row:nth-child(2){animation-delay:.04s}.rows > .row:nth-child(3){animation-delay:.08s}
+.rows > .row:nth-child(4){animation-delay:.12s}.rows > .row:nth-child(5){animation-delay:.16s}
+.rows > .row:nth-child(n+6){animation-delay:.2s}
+
+/* ضغطة حية على كل حاجة قابلة للّمس */
+.card[data-act],.row,.tile,.stat,.pill,.pick,.chip{transition:transform .35s var(--spring-ios),background .25s,box-shadow .25s}
+.row:active,.tile:active,.stat:active,.card[data-act]:active{transform:scale(.97)}
+.btn,.fab,.icon-btn,.who{transition:transform .35s var(--spring-ios),filter .2s,box-shadow .3s}
+.icon-btn:active,.who:active{transform:scale(.88)}
+@media (hover:hover){
+  .card:hover,.stat:hover,.tile:hover{transform:translateY(-3px);box-shadow:var(--sh-2)}
+  .btn:hover{filter:brightness(1.06)}
+}
+
+/* لمعة بتعدّي على البطاقة الرئيسية + تنفّس خفيف */
+.hero{overflow:hidden;animation:aIn .7s var(--ease-ios) both,breathe 6s ease-in-out 1s infinite}
+.hero::after{content:"";position:absolute;inset:-40%;pointer-events:none;
+  background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.28) 50%,transparent 60%);
+  transform:translateX(-120%);animation:sheen 5.5s ease-in-out 1.2s infinite}
+@keyframes sheen{0%,55%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+@keyframes breathe{0%,100%{box-shadow:0 18px 40px rgba(10,132,255,.28)}50%{box-shadow:0 22px 52px rgba(94,92,230,.42)}}
+
+/* FAB: نبضة */
+.fab::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--pri);z-index:-1;
+  animation:ring 2.6s var(--ease-ios) infinite}
+@keyframes ring{0%{transform:scale(1);opacity:.45}80%,100%{transform:scale(1.7);opacity:0}}
+.fab{animation:fabIn .7s var(--spring-ios) .4s both}
+@keyframes fabIn{from{transform:scale(0) rotate(-90deg)}to{transform:none}}
+
+/* تاب بار: الأيقونة تنط، والمؤشر يتحرك */
+.nav button.on .ic{animation:tabPop .5s var(--spring-ios)}
+@keyframes tabPop{0%{transform:scale(.7) translateY(2px)}60%{transform:scale(1.18) translateY(-3px)}100%{transform:translateY(-1px)}}
+.nav button{transition:color .25s,background .35s var(--ease-ios),transform .3s var(--spring-ios)}
+.nav button:active{transform:scale(.9)}
+.nav{animation:navIn .7s var(--spring-ios) .15s both}
+@keyframes navIn{from{transform:translateY(120%)}to{transform:none}}
+
+/* انتقال الشاشات */
+.screen.fwd.anim{animation:slideFwd .45s var(--ease-ios) both}
+.screen.bwd.anim{animation:slideBwd .45s var(--ease-ios) both}
+@keyframes slideFwd{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
+@keyframes slideBwd{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+
+/* شيت وتوست بنابض */
+.sheet{transition:transform .5s var(--spring-ios)}
+#toast div{transform:translateY(-24px) scale(.9);transition:transform .55s var(--spring-ios),opacity .3s}
+#toast div.on{transform:none}
+.scrim{transition:opacity .35s var(--ease-ios)}
+
+/* شارات وأشرطة */
+.chip.bad{animation:chipPulse 2.4s ease-in-out infinite}
+@keyframes chipPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,59,48,.35)}50%{box-shadow:0 0 0 6px rgba(255,59,48,0)}}
+.bar i,.hb-fill{transition:width .8s var(--ease-ios)}
+.nav .badge{animation:badgePop .5s var(--spring-ios)}
+@keyframes badgePop{from{transform:scale(0)}to{transform:none}}
+
+/* ريبل على الأزرار */
+.rip{position:absolute;border-radius:50%;pointer-events:none;background:currentColor;opacity:.22;
+  transform:scale(0);animation:rip .6s var(--ease-ios) forwards}
+@keyframes rip{to{transform:scale(1);opacity:0}}
+.btn,.pill,.row,.tile{position:relative;overflow:hidden}
+
+/* ميزة جديدة: زر قائمة الطلب العايم */
+.reorder-pill{position:fixed;z-index:34;inset-inline-start:max(16px,calc(50vw - 260px + 16px));
+  bottom:calc(var(--dock-h) + var(--dock-gap) + var(--safe-b) + 24px);
+  display:none;align-items:center;gap:8px;padding:11px 16px;border-radius:999px;
+  background:var(--glass);color:var(--ink);font-weight:600;font-size:13.5px;
+  -webkit-backdrop-filter:blur(24px) saturate(180%);backdrop-filter:blur(24px) saturate(180%);
+  box-shadow:var(--sh-2),0 0 0 .5px var(--line)}
+.reorder-pill.on{display:inline-flex;animation:pillIn .6s var(--spring-ios) both}
+.reorder-pill b{background:var(--bad);color:#fff;border-radius:999px;min-width:22px;height:22px;display:grid;place-items:center;font-size:12px;padding:0 6px}
+@keyframes pillIn{from{opacity:0;transform:translateY(20px) scale(.8)}to{opacity:1;transform:none}}
+.ro-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:.5px solid var(--line)}
+.ro-row:last-child{border:0}
+.ro-row .nm{flex:1;min-width:0;font-weight:600;font-size:15px}
+.ro-row .nm small{display:block;font-weight:400;color:var(--ink2);font-size:12px;margin-top:2px}
+.ro-q{display:flex;align-items:center;gap:6px}
+.ro-q button{width:30px;height:30px;border-radius:50%;background:var(--surf2);font-size:18px;font-weight:600;color:var(--pri)}
+.ro-q button:active{transform:scale(.85)}
+.ro-q input{width:56px;text-align:center;border:0;background:var(--surf2);border-radius:10px;height:34px;font-weight:700;font-size:15px}
+.ro-in{background:var(--ok-soft);color:var(--ok);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600}
+
+@media (prefers-reduced-motion:reduce){
+  .hero::after,.fab::before{display:none}
+  .screen.on > *,.rows > .row,.tiles > .tile,.stat-grid > .stat{animation:none!important}
+}
