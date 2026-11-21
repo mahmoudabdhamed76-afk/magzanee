@@ -2,14 +2,23 @@
    HTML: network-first (عشان أي نشر جديد يوصل على طول)
    باقي الملفات: cache-first
    /api/ و /healthz: مفيش كاش خالص                                   */
-const CACHE = "mystock-v2";
+const CACHE = "mystock-v4";
 const SHELL = [
   "./",
   "./index.html",
+  "./styles.css?v=4",
   "./icon.svg",
   "./manifest.webmanifest",
   "./motion.js?v=1",
-  "./vendor/gsap/gsap.min.js?v=1"
+  "./vendor/gsap/gsap.min.js?v=1",
+  "./fonts/plex-arabic-400.woff2",
+  "./fonts/plex-arabic-500.woff2",
+  "./fonts/plex-arabic-600.woff2",
+  "./fonts/plex-arabic-700.woff2",
+  "./fonts/plex-latin-400.woff2",
+  "./fonts/plex-latin-500.woff2",
+  "./fonts/plex-latin-600.woff2",
+  "./fonts/plex-latin-700.woff2"
 ];
 
 self.addEventListener("install", e => {
