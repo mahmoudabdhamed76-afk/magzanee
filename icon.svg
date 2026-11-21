@@ -1,18 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#2E4C7E"/>
-      <stop offset="100%" stop-color="#16233A"/>
+      <stop offset="0%" stop-color="#1F6B4E"/>
+      <stop offset="100%" stop-color="#0E3A2C"/>
     </linearGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#g)"/>
+  <circle cx="404" cy="404" r="36" fill="#C4451A"/>
   <g fill="none" stroke="#FFFFFF" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M64 214 256 104l192 110"/>
-    <path d="M100 236v202h312V236"/>
-    <path d="M64 438h384"/>
+    <path d="M78 214 256 108l178 106"/>
+    <path d="M112 236v188h288V236"/>
+    <path d="M78 424h356"/>
   </g>
-  <g fill="none" stroke="#D9822B" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
-    <rect x="188" y="288" width="136" height="150" rx="14"/>
-    <path d="M188 363h136M256 288v150"/>
+  <g fill="none" stroke="#F4F0E6" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="196" y="276" width="120" height="148" rx="16"/>
+    <path d="M196 350h120M256 276v148"/>
   </g>
 </svg>
